@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="Content-Security-Policy" content="script-src 'self' http://xxxx 'unsafe-inline';">
+        
+        <title>PestoLinkTx</title>
+        <link rel="stylesheet" href="pestolink.css">
+    </head>
+    <body>
+        <div class="box-outer">
+            <div class="box-title">
+                <h1 class="box-title">PestoLink-Online</h1>
+            </div>
+
+            <div class="box-ble">
+                <p class="box-status-ble">BLE Status: <strong id="bleStatus">Not connected</strong></p>
+                <div class="button-container-ble">
+
+                    <button id="connectButton" class="button-ble">BLE Connect</button>
+                    <button id="disconnectButton" class="button-ble">BLE Disconnect</button>                    
+                 </div>
+            </div>
+
+            <div class="box-gamepad" >
+
+                <p class="box-status-gamepad">Gamepad Status: <strong id="gamepadStatus">Not connected</strong></p>
+             
+                <div id="tableContainer" class="box-axes"></div>
+    
+                <div id="buttonsContainer"class="button-container-buttons"> </div>
+
+            </div>
+        </div>
+    </script>
+    </body>
+</html>
+<script src=" ./gamepadVisuals.js"></script>
+<script src=" ./index.js"></script>
