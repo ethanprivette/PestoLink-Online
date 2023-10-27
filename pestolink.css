@@ -30,8 +30,9 @@ body {
     border-style: solid;
     border-width: 8px;
     background: var(--alf-green);
+    padding: 16px;
     margin: 8px;
-    text-justify: center;
+    text-align: left;
 }
 
 .button-container-ble {
@@ -48,6 +49,8 @@ body {
     color: white;
     height: 32px;
     margin: 4px;
+    font-family: Gotham Rounded, sans-serif;
+    font-size: 16px;
     font-weight: bold;
 }
 
@@ -63,7 +66,9 @@ body {
     cursor: pointer;
     border-radius: 8px;
     flex: 1; /* Makes the buttons share the width equally */
+    font-family: Gotham Rounded, sans-serif;
     color: white;
+    font-size: 16px;
     font-weight: bold;
 }
 
@@ -114,12 +119,10 @@ body {
     margin-bottom: 0px;
 }
 
-.calculator-grid > button {
-    margin: 5px;
-    height: 40px;
-    background-color: var(--alf-green);
-    border-radius: 12px;
-    border: none;
-    color: white;
-    text-align: center;
+.text-pesto-1 {
+    font-size: 40px;
+}
+
+.text-pesto-2 {
+    font-size: 20px;
 }
