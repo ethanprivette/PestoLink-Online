@@ -1,0 +1,52 @@
+:root {
+    --alf-green: #4dae50;
+    --alf-beige: #efe4b0;
+}
+
+* {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font-family: Gotham Rounded, sans-serif;
+    color: white;
+    font-weight: bold;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    background: var(--alf-beige);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.box-outer {
+    display: block;
+    width: 615px;
+}
+
+.container-title {
+    margin: 2vw;
+    background: grey;
+    border: 1vw solid grey;
+    border-radius: 2vw;
+    font-size: 35px;
+    text-align: center;
+}
+
+.container-link {
+    margin: 2vw;
+    background: grey;
+    border: 1vw solid grey;
+    border-radius: 2vw;
+    align-items: center;
+}
+
+.container-text {
+    margin: 2vw;
+    background: grey;
+    border: 1vw solid grey;
+    border-radius: 2vw;
+}
+

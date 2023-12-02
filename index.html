@@ -6,11 +6,23 @@
         <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
 
         <title>PestoLink-Online</title>
+        <link rel="stylesheet" href="styles.css">
     </head>
     <body>
-        <div>Welcome to PestoLink-Online!</div>
-        <a href="http://pestol.ink/PestoLink-Gamepad/gamepad.html">PestoLink-Gamepad</a>
-        <a href="http://pestol.ink/PestoLink-Mobile/mobile.html">PestoLink-Mobile</a>
+        <div class="box-outer">
+            <div class="container-title">Welcome to PestoLink-Online!</div>
+            <a class="container-link" href="http://pestol.ink/PestoLink-Gamepad/gamepad.html">PestoLink-Gamepad</a>
+            <a class="container-link" href="http://pestol.ink/PestoLink-Mobile/mobile.html">PestoLink-Mobile</a>
+            <p class="container-text">
+                Control your robot with PestoLink-Online! PestoLink-Online runs in any browser with Bluetooth Low Energy (BLE) support. If you have a USB Xbox or PlayStation controller, use PestoLink-Gamepad. If you want to use your phone or your laptops keyboard to control your robot, use Pestolink-Mobile.
+            </p>
+            <p class="container-text">
+                If you set up an Arduino based robot with <a href="https://github.com/AlfredoSystems/PestoLink-Receive">PestoLink-Receive</a>, you can then open PestoLink-Online in a browser, connect to your MCU with BLE, and send gamepad data to the MCU.
+            </p>
+            <p class="container-text">
+                PestoLink-Online can also be used to control MicroPython based robots, for example an <a href="https://www.sparkfun.com/products/22230">XRP Kit</a> by using <a href="https://github.com/AlfredoSystems/PestoLink-MicroPython/tree/main">PestoLink-MicroPython</a>.
+            </p>
 
+        </div>
     </body>
 </html>
