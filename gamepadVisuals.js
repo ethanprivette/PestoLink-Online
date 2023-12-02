@@ -33,7 +33,7 @@ const tableContainer = document.getElementById("tableContainer");
 tableContainer.appendChild(table);
 
 
-// Create 16 buttons and add them to the buttonsRow div
+// Create 8 buttons and add them to the buttonsRow div
 const buttonsContainer = document.getElementById('buttonsContainer');
 for (let i = 0; i <= 7; i++) {
     const button = document.createElement('button');

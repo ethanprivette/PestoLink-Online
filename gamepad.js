@@ -28,7 +28,8 @@ async function connectBLE() {
    displayBleStatus('Searching for devices with the PestoBLE service');
 
    try {
-      device = await navigator.bluetooth.requestDevice({filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
+      //device = await navigator.bluetooth.requestDevice({optionalServices: [SERVICE_UUID_PESTOBLE], acceptAllDevices: true});
+      device = await navigator.bluetooth.requestDevice({filters: [{services: [SERVICE_UUID_PESTOBLE]}]});
       displayBleStatus('Found device ' + device.name);
 
       server = await device.gatt.connect();
