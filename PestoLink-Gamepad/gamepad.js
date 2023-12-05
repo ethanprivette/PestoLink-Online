@@ -39,11 +39,18 @@ async function connectBLE() {
       displayBleStatus('Service aquired');
 
       characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
+
+      await sleep(4000)
+
       displayBleStatus('Characteristics aquired, BLE connection successful');
 
    } catch (error) {
       displayBleStatus("Error: " + error);
    }
+}
+
+function sleep(ms) {
+   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function disconnectBLE() {

@@ -265,27 +265,13 @@ function createBleAgent(parent) {
  
   async function connectBLE() { 
     displayBleStatus('Connecting');
-    // try {
-    //   let available = await navigator.bluetooth.getAvailability();
-    //   console.log(available);
-   
-    // } catch (error) {
-    //   displayBleStatus("Error");
-    //   console.error('Error:', error);      
-    // }
 
     try {
-        //let filters = [];
-        //filters.push({services: [SERVICE_UUID_PESTOBLE]});
-        //let options = { filters }
-
-        //device = await navigator.bluetooth.requestDevice(options);
-        //device = await navigator.bluetooth.requestDevice({optionalServices: [SERVICE_UUID_PESTOBLE], acceptAllDevices: true});
         device = await navigator.bluetooth.requestDevice({filters: [{services: [SERVICE_UUID_PESTOBLE]}]});
         server = await device.gatt.connect();
         service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
         characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
-
+ 
         displayBleStatus('Connected');
         isConnectedBLE = true;
 
@@ -294,6 +280,7 @@ function createBleAgent(parent) {
         console.error('Error:', error);
       }
   }
+
 
   async function disconnectBLE() { 
     displayBleStatus('Disconnecting');
