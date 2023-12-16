@@ -9,9 +9,9 @@ function createJoystick(parent) {
   const stick = document.createElement('div');
   stick.classList.add('joystick');
 
-  //stick.addEventListener('mousedown', handleMouseDown);
-  //document.addEventListener('mousemove', handleMouseMove);
-  //document.addEventListener('mouseup', handleMouseUp);
+  stick.addEventListener('mousedown', handleMouseDown);
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', handleMouseUp);
 
   stick.addEventListener('touchstart', handleTouchDown, { passive: false });
   document.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -175,9 +175,9 @@ function createButtonAgent() {
   ];
 
   for (let i = 0; i < buttons.length; i++) {
-    //buttons[i].onmousedown = handleButton.bind(null, i, true);
+    buttons[i].onmousedown = handleButton.bind(null, i, true);
     buttons[i].ontouchstart = handleButton.bind(null, i, true);
-    //buttons[i].onclick = handleButton.bind(null, i, false);
+    buttons[i].onclick = handleButton.bind(null, i, false);
     buttons[i].ontouchend = handleButton.bind(null, i, false);
   }
   document.addEventListener('keydown', handleKeyboardInput);
