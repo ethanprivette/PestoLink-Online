@@ -45,6 +45,11 @@ body {
     border-radius: 2vw;
 }
 
+.desktop-only,
+.mobile-only{
+    display:none;
+}
+
 #info-container {
     display: none;
     box-sizing: border-box;

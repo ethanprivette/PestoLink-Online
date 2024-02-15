@@ -7,8 +7,6 @@ let gamepadAgent = createGamepadAgent();
 let axisCallback = null
 let buttonCallback = null
 
-
-
 let mobileElements = document.getElementsByClassName("mobile-only");
 let desktopElements = document.getElementsByClassName("desktop-only");
 let infoElement = document.getElementById("info-container");
@@ -22,13 +20,14 @@ let toggleInfo = document.getElementById('toggle-info');
 // --------------------------- state management ------------------------------------ //
 
 if (localStorage.getItem(toggleMobile.id) == null) {
-   let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-   if (isMobile) {
-       localStorage.setItem(toggleMobile.id, 'true');
-   } else {
-       localStorage.setItem(toggleMobile.id, 'false');
-   }
-}
+    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    if (isMobile) {
+        localStorage.setItem(toggleMobile.id, 'true');
+    } else {
+        localStorage.setItem(toggleMobile.id, 'false');
+    }
+    updateMobileSlider(toggleMobile, false);
+ }
 
 document.addEventListener('DOMContentLoaded', function () {
     toggleMobile.addEventListener('click', updateMobileSlider.bind(null, toggleMobile, true));
@@ -41,6 +40,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (localStorage.getItem(toggleKeyboardWASD.id) === 'true') updateSlider(toggleKeyboardWASD, false);
     if (localStorage.getItem(toggleLegacyPacket.id) === 'true') updateSlider(toggleLegacyPacket, false);
     if (localStorage.getItem(toggleInfo.id) === 'true') updateInfoSlider(toggleInfo, false);
+
+    window.setInterval(renderLoop, 40); // call renderLoop every num milliseconds
 });
 
 function updateMobileSlider(sliderElement, toggleState){
@@ -95,11 +96,6 @@ function updateSlider(sliderElement, toggleState){
 }
 
 // ----------------------------------------- main --------------------------------------- //
-
-
-document.addEventListener("DOMContentLoaded", () => {
-    window.setInterval(renderLoop, 40); // call renderLoop every num milliseconds
-});
 
 function renderLoop() {
     //bytes 0: packet version
