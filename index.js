@@ -7,57 +7,50 @@ let gamepadAgent = createGamepadAgent();
 let axisCallback = null
 let buttonCallback = null
 
+
+
 let mobileElements = document.getElementsByClassName("mobile-only");
 let desktopElements = document.getElementsByClassName("desktop-only");
 let infoElement = document.getElementById("info-container");
 let hackSpacerElement = document.getElementById("hack-spacer");
 
-let toggleGamepad = document.getElementById('toggle-gamepad-layout');
-let toggleKeyboard = document.getElementById('toggle-keyboard-style');
-let toggleLegacy = document.getElementById('toggle-legacy');
+let toggleMobile = document.getElementById('toggle-mobile-layout');
+let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
+let toggleLegacyPacket = document.getElementById('toggle-legacy');
 let toggleInfo = document.getElementById('toggle-info');
 
 // --------------------------- state management ------------------------------------ //
 
-if (localStorage.getItem('layout') == null) {
-    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-    if (isMobile) {
-        localStorage.setItem('layout', 'mobile');
-    } else {
-        localStorage.setItem('layout', 'gamepad');
-    }
-}
+//if (localStorage.getItem('mobileLayout') == null) {
+//    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+//    if (isMobile) {
+//        localStorage.setItem('mobileLayout', 'true');
+//    } else {
+//        localStorage.setItem('mobileLayout', 'false');
+//    }
+//}
 
 document.addEventListener('DOMContentLoaded', function () {
+    toggleMobile.onclick = updateMobileSlider.bind(null, toggleMobile, true);
+    toggleKeyboardWASD.onclick = updateSlider.bind(null, toggleKeyboardWASD, true);
+    toggleLegacyPacket.onclick = updateSlider.bind(null, toggleLegacyPacket, true);
+    toggleInfo.onclick = updateInfoSlider.bind(null, toggleInfo, true);
 
-    if (localStorage.getItem('layout') == 'mobile') toggleGamepad.checked = true;
-    updateLayout();
-    toggleGamepad.addEventListener('change', updateLayout);
-
-    if (localStorage.getItem('keyboardStyle') == 'wasdAxes') toggleKeyboard.checked = true;
-    updateKeyboardStyle();
-    toggleKeyboard.addEventListener('change', updateKeyboardStyle);
-
-    if (localStorage.getItem('legacyPacket') == 'true') toggleLegacy.checked = true;
-    updateLegacyStyle();
-    toggleLegacy.addEventListener('change', updateLegacyStyle);
-
-    if (localStorage.getItem('showInfo') == 'true') toggleInfo.checked = true;
-    updateInfo();
-    toggleInfo.addEventListener('change', updateInfo);
+    if (localStorage.getItem(toggleMobile.id) === 'true') updateMobileSlider(toggleMobile, false);
+    if (localStorage.getItem(toggleKeyboardWASD.id) === 'true') updateSlider(toggleKeyboardWASD, false);
+    if (localStorage.getItem(toggleLegacyPacket.id) === 'true') updateSlider(toggleLegacyPacket, false);
+    if (localStorage.getItem(toggleInfo.id) === 'true') updateInfoSlider(toggleInfo, false);
 });
 
-function updateLayout() {
-    if (toggleGamepad.checked) {
-        localStorage.setItem('layout', 'mobile');
+function updateMobileSlider(sliderElement, toggleState){
+    updateSlider(sliderElement, toggleState);
 
+    if (localStorage.getItem(toggleMobile.id) === 'true') {
         for (let element of desktopElements) element.style.display = "none";
         for (let element of mobileElements) element.style.display = "grid";
         axisCallback = axisAgent.getAxes
         buttonCallback = buttonAgent.getButtons
     } else {
-        localStorage.setItem('layout', 'gamepad');
-
         for (let element of mobileElements) element.style.display = "none";
         for (let element of desktopElements) element.style.display = "grid";
         axisCallback = gamepadAgent.getAxes
@@ -65,31 +58,38 @@ function updateLayout() {
     }
 }
 
-function updateKeyboardStyle() {
-    if (toggleKeyboard.checked) {
-        localStorage.setItem('keyboardStyle', 'wasdAxes');
-    } else {
-        localStorage.setItem('keyboardStyle', 'default');
-    }
-}
+function updateInfoSlider(sliderElement, toggleState){
+    updateSlider(sliderElement, toggleState);
 
-function updateLegacyStyle() {
-    if (toggleLegacy.checked) {
-        localStorage.setItem('legacyPacket', 'true');
-    } else {
-        localStorage.setItem('legacyPacket', 'false');
-    }
-}
-
-function updateInfo() {
-    if (toggleInfo.checked) {
-        localStorage.setItem('showInfo', 'true');
+    if (localStorage.getItem(toggleInfo.id) === 'true') {
         infoElement.style.display = "grid";
         hackSpacerElement.style.display = "none";
     } else {
-        localStorage.setItem('showInfo', 'false');
-        hackSpacerElement.style.display = "grid";
         infoElement.style.display = "none";
+        hackSpacerElement.style.display = "grid";
+    }
+}
+
+function updateSlider(sliderElement, toggleState){
+    if(toggleState){
+        if ( localStorage.getItem(sliderElement.id) === 'true') {
+            localStorage.setItem(sliderElement.id, 'false');
+        } else {
+            localStorage.setItem(sliderElement.id, 'true');
+        }        
+    }
+
+    if ( localStorage.getItem(sliderElement.id) === 'true') {
+        sliderElement.style.backgroundColor = 'var(--alf-green)';
+        sliderElement.firstElementChild.style.transform = 'translateX(2vw)';
+        sliderElement.firstElementChild.style.webkitTransform  = 'translateX(2vw)';
+        sliderElement.firstElementChild.style.msTransform = 'translateX(2vw)';
+
+    } else {
+        sliderElement.style.backgroundColor = 'rgb(189, 188, 188)';
+        sliderElement.firstElementChild.style.transform = 'none';
+        sliderElement.firstElementChild.style.webkitTransform  = 'none';
+        sliderElement.firstElementChild.style.msTransform = 'none';
     }
 }
 
@@ -129,7 +129,7 @@ function renderLoop() {
 
     function clampUint8(value) { return Math.max(0, Math.min(value, 255)) }
 
-    if (localStorage.getItem('keyboardStyle') == 'wasdAxes') {
+    if (localStorage.getItem(toggleKeyboardWASD.id) === 'true') {
         for (let key of keyboardArray) {
             if (key === 27 || key === 41) rawPacket[1] = clampUint8(rawPacket[1] - 128);
             if (key === 29 || key === 37) rawPacket[1] = clampUint8(rawPacket[1] + 128);
@@ -142,7 +142,7 @@ function renderLoop() {
         }
     }
 
-    if (localStorage.getItem('legacyPacket') == 'true') {
+    if (localStorage.getItem(toggleLegacyPacket.id) === 'true') {
         rawPacket[0] = rawPacket[1]
         rawPacket[1] = rawPacket[2]
         rawPacket[2] = rawPacket[3]

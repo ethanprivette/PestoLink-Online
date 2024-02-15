@@ -55,7 +55,6 @@ body {
     padding-left: 2vw;
     border-radius: 2vw;
     font-size: 1vw;
-    height: 40vw;
 }
 
 #hack-spacer {
@@ -193,15 +192,17 @@ body {
     grid-template-columns: 2fr 1fr;
     background-color: grey;
     border-radius: 1vw;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
-.settings-box {
+.settings-label {
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
     font-size: 1.2vw;
-
 }
 
 .settings-toggle {
@@ -212,13 +213,7 @@ body {
     touch-action: manipulation; 
 }
 
-.settings-toggle input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.round-toggle {
+.toggle-round {
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -229,11 +224,7 @@ body {
     border-radius: 3vw;
 }
 
-input:checked+.round-toggle {
-    background-color: var(--alf-green);
-}
-
-.round-toggle:before {
+.toggle-nub {
     position: absolute;
     content: "";
     height: 2vw;
@@ -242,11 +233,4 @@ input:checked+.round-toggle {
     bottom: 0.5vw;
     background-color: white;
     border-radius: 50%;
-    transition: transform 0.3s;
-}
-
-input:checked+.round-toggle:before {
-    -webkit-transform: translateX(2vw);
-    -ms-transform: translateX(2vw);
-    transform: translateX(2vw);
 }
