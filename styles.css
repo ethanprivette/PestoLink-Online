@@ -63,7 +63,7 @@ body {
     background: var(--alf-green);
     width: 84vw;
     margin: 1vw;
-    height: 8vw;
+    height: 6vw;
 }
 
 #user-container {
@@ -209,6 +209,7 @@ body {
     display: inline-block;
     width: 5vw;
     height: 3vw;
+    touch-action: manipulation; 
 }
 
 .settings-toggle input {
@@ -241,6 +242,7 @@ input:checked+.round-toggle {
     bottom: 0.5vw;
     background-color: white;
     border-radius: 50%;
+    transition: transform 0.3s;
 }
 
 input:checked+.round-toggle:before {
