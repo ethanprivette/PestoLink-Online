@@ -34,16 +34,16 @@ document.addEventListener('DOMContentLoaded', function () {
     updateSlider(toggleKeyboardWASD, toggleState=false);
     updateSlider(toggleLegacyPacket, toggleState=false);
     updateInfoSlider(toggleInfo, toggleState=false);
-    
-    toggleMobile.addEventListener('mousedown', updateMobileSlider.bind(null, toggleMobile, toggleState=true));
-    toggleKeyboardWASD.addEventListener('mousedown', updateSlider.bind(null, toggleKeyboardWASD, toggleState=true));
-    toggleLegacyPacket.addEventListener('mousedown', updateSlider.bind(null, toggleLegacyPacket, toggleState=true));
-    toggleInfo.addEventListener('mousedown', updateInfoSlider.bind(null, toggleInfo, toggleState=true));
 
-    toggleMobile.addEventListener('touchstart', updateMobileSlider.bind(null, toggleMobile, toggleState=true));
-    toggleKeyboardWASD.addEventListener('touchstart', updateSlider.bind(null, toggleKeyboardWASD, toggleState=true));
-    toggleLegacyPacket.addEventListener('touchstart', updateSlider.bind(null, toggleLegacyPacket, toggleState=true));
-    toggleInfo.addEventListener('touchstart', updateInfoSlider.bind(null, toggleInfo, toggleState=true));
+    toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
+    toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
+    toggleLegacyPacket.onmousedown = updateSlider.bind(null, toggleLegacyPacket, toggleState=true)
+    toggleInfo.onmousedown =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
+    
+    toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
+    toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
+    toggleLegacyPacket.ontouchstart = updateSlider.bind(null, toggleLegacyPacket, toggleState=true)
+    toggleInfo.ontouchstart =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
     
     window.setInterval(renderLoop, 40); // call renderLoop every num milliseconds
 });
