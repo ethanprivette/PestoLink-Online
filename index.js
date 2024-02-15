@@ -21,14 +21,14 @@ let toggleInfo = document.getElementById('toggle-info');
 
 // --------------------------- state management ------------------------------------ //
 
-//if (localStorage.getItem('mobileLayout') == null) {
-//    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-//    if (isMobile) {
-//        localStorage.setItem('mobileLayout', 'true');
-//    } else {
-//        localStorage.setItem('mobileLayout', 'false');
-//    }
-//}
+if (localStorage.getItem(toggleMobile.id) == null) {
+   let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+   if (isMobile) {
+       localStorage.setItem(toggleMobile.id, 'true');
+   } else {
+       localStorage.setItem(toggleMobile.id, 'false');
+   }
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     toggleMobile.onclick = updateMobileSlider.bind(null, toggleMobile, true);
