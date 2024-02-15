@@ -58,6 +58,14 @@ body {
     height: 40vw;
 }
 
+#hack-spacer {
+    display: grid;
+    background: var(--alf-green);
+    width: 84vw;
+    margin: 1vw;
+    height: 8vw;
+}
+
 #user-container {
     box-sizing: border-box;
     display: flex;

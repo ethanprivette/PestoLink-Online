@@ -10,6 +10,7 @@ let buttonCallback = null
 let mobileElements = document.getElementsByClassName("mobile-only");
 let desktopElements = document.getElementsByClassName("desktop-only");
 let infoElement = document.getElementById("info-container");
+let hackSpacerElement = document.getElementById("hack-spacer");
 
 let toggleGamepad = document.getElementById('toggle-gamepad-layout');
 let toggleKeyboard = document.getElementById('toggle-keyboard-style');
@@ -30,20 +31,20 @@ if (localStorage.getItem('layout') == null) {
 document.addEventListener('DOMContentLoaded', function () {
 
     if (localStorage.getItem('layout') == 'mobile') toggleGamepad.checked = true;
-    updateLayout()
-    toggleGamepad.onclick = updateLayout
+    updateLayout();
+    toggleGamepad.addEventListener('change', updateLayout);
 
     if (localStorage.getItem('keyboardStyle') == 'wasdAxes') toggleKeyboard.checked = true;
-    updateKeyboardStyle()
-    toggleKeyboard.onclick = updateKeyboardStyle
+    updateKeyboardStyle();
+    toggleKeyboard.addEventListener('change', updateKeyboardStyle);
 
     if (localStorage.getItem('legacyPacket') == 'true') toggleLegacy.checked = true;
-    updateLegacyStyle()
-    toggleLegacy.onclick = updateLegacyStyle
+    updateLegacyStyle();
+    toggleLegacy.addEventListener('change', updateLegacyStyle);
 
     if (localStorage.getItem('showInfo') == 'true') toggleInfo.checked = true;
-    updateInfo()
-    toggleInfo.onclick = updateInfo
+    updateInfo();
+    toggleInfo.addEventListener('change', updateInfo);
 });
 
 function updateLayout() {
@@ -84,8 +85,10 @@ function updateInfo() {
     if (toggleInfo.checked) {
         localStorage.setItem('showInfo', 'true');
         infoElement.style.display = "grid";
+        hackSpacerElement.style.display = "none";
     } else {
         localStorage.setItem('showInfo', 'false');
+        hackSpacerElement.style.display = "grid";
         infoElement.style.display = "none";
     }
 }
