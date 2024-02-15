@@ -30,17 +30,16 @@ if (localStorage.getItem(toggleMobile.id) == null) {
  }
 
 document.addEventListener('DOMContentLoaded', function () {
-    toggleMobile.addEventListener('click', updateMobileSlider.bind(null, toggleMobile, true));
-    toggleKeyboardWASD.addEventListener('click', updateSlider.bind(null, toggleKeyboardWASD, true));
-    toggleLegacyPacket.addEventListener('click', updateSlider.bind(null, toggleLegacyPacket, true));
-    toggleInfo.addEventListener('click', updateInfoSlider.bind(null, toggleInfo, true));
+    updateMobileSlider(toggleMobile, toggleState=false);
+    updateSlider(toggleKeyboardWASD, toggleState=false);
+    updateSlider(toggleLegacyPacket, toggleState=false);
+    updateInfoSlider(toggleInfo, toggleState=false);
     
-
-    if (localStorage.getItem(toggleMobile.id) === 'true') updateMobileSlider(toggleMobile, false);
-    if (localStorage.getItem(toggleKeyboardWASD.id) === 'true') updateSlider(toggleKeyboardWASD, false);
-    if (localStorage.getItem(toggleLegacyPacket.id) === 'true') updateSlider(toggleLegacyPacket, false);
-    if (localStorage.getItem(toggleInfo.id) === 'true') updateInfoSlider(toggleInfo, false);
-
+    toggleMobile.addEventListener('click', updateMobileSlider.bind(null, toggleMobile, toggleState=true));
+    toggleKeyboardWASD.addEventListener('click', updateSlider.bind(null, toggleKeyboardWASD, toggleState=true));
+    toggleLegacyPacket.addEventListener('click', updateSlider.bind(null, toggleLegacyPacket, toggleState=true));
+    toggleInfo.addEventListener('click', updateInfoSlider.bind(null, toggleInfo, toggleState=true));
+    
     window.setInterval(renderLoop, 40); // call renderLoop every num milliseconds
 });
 
