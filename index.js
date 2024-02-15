@@ -31,10 +31,11 @@ if (localStorage.getItem(toggleMobile.id) == null) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    toggleMobile.onclick = updateMobileSlider.bind(null, toggleMobile, true);
-    toggleKeyboardWASD.onclick = updateSlider.bind(null, toggleKeyboardWASD, true);
-    toggleLegacyPacket.onclick = updateSlider.bind(null, toggleLegacyPacket, true);
-    toggleInfo.onclick = updateInfoSlider.bind(null, toggleInfo, true);
+    toggleMobile.addEventListener('click', updateMobileSlider.bind(null, toggleMobile, true));
+    toggleKeyboardWASD.addEventListener('click', updateSlider.bind(null, toggleKeyboardWASD, true));
+    toggleLegacyPacket.addEventListener('click', updateSlider.bind(null, toggleLegacyPacket, true));
+    toggleInfo.addEventListener('click', updateInfoSlider.bind(null, toggleInfo, true));
+    
 
     if (localStorage.getItem(toggleMobile.id) === 'true') updateMobileSlider(toggleMobile, false);
     if (localStorage.getItem(toggleKeyboardWASD.id) === 'true') updateSlider(toggleKeyboardWASD, false);
