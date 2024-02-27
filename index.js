@@ -361,7 +361,7 @@ function createMobileAxisAgent() {
         let xScaled = 127
         if (currentPos.x != 0) xScaled = Math.round((currentPos.x / (parent.offsetWidth * maxDiffScale) + 1) * (255 / 2));
 
-        return { axis0: yScaled, axis1: xScaled, axis2: 127, axis3: 127 };
+        return { axis0: xScaled, axis1: yScaled, axis2: 127, axis3: 127 };
     }
 
     return {
