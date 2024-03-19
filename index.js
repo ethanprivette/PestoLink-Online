@@ -132,10 +132,10 @@ function renderLoop() {
 
     if (localStorage.getItem(toggleKeyboardWASD.id) === 'true') {
         for (let key of keyboardArray) {
-            if (key === 27 || key === 41) rawPacket[1] = clampUint8(rawPacket[1] - 128);
-            if (key === 29 || key === 37) rawPacket[1] = clampUint8(rawPacket[1] + 128);
-            if (key === 19 || key === 28) rawPacket[2] = clampUint8(rawPacket[2] - 128);
-            if (key === 22 || key === 30) rawPacket[2] = clampUint8(rawPacket[2] + 128);
+            if (key === 19 || key === 28) rawPacket[1] = clampUint8(rawPacket[2] - 128);
+            if (key === 22 || key === 30) rawPacket[1] = clampUint8(rawPacket[2] + 128);
+            if (key === 27 || key === 41) rawPacket[2] = clampUint8(rawPacket[1] - 128);
+            if (key === 29 || key === 37) rawPacket[2] = clampUint8(rawPacket[1] + 128);
             if (key === 44 || key === 20) rawPacket[5] |= (1 << 0)
             if (key === 42 || key === 32) rawPacket[5] |= (1 << 1)
             if (key === 21 || key === 31) rawPacket[5] |= (1 << 2)
