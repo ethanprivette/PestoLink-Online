@@ -11,6 +11,9 @@ let buttonCallback = null
 
 let mobileElements = document.getElementsByClassName("mobile-only");
 let desktopElements = document.getElementsByClassName("desktop-only");
+
+let helpRow = document.getElementsByClassName("help-row");
+
 let infoElement = document.getElementById("info-container");
 let hackSpacerElement = document.getElementById("hack-spacer");
 
@@ -28,6 +31,8 @@ if (localStorage.getItem(toggleMobile.id) == null) {
     }
     updateMobileSlider(toggleMobile, false);
  }
+
+ if(isMobile) for (let element of helpRow) element.style.display = "none";
 
 document.addEventListener('DOMContentLoaded', function () {
     updateMobileSlider(toggleMobile, toggleState=false);
@@ -102,7 +107,7 @@ function renderLoop() {
     //bytes 0: packet version
     //bytes 1-4: axes
     //bytes 5-6: button states
-    //bytes 7-19: pressed keyboard keys
+    //bytes 7-17: pressed keyboard keys
     let rawPacket = new Uint8Array(1 + 4 + 2 + 11)
 
     rawPacket[0] = 0x01; //packet version
@@ -142,7 +147,7 @@ function renderLoop() {
 
     if (!document.hasFocus()) { rawPacket.fill(0, 0, 20); }
 
-    //console.log(rawPacket)
+    console.log(rawPacket)
     bleAgent.attemptSend(rawPacket);
 }
 
@@ -205,9 +210,9 @@ function createBleAgent() {
 
             await device.addEventListener('gattserverdisconnected', robotDisconnect);
 
-            displayBleStatus('Connected', '#4dae50'); //green
             isConnectedBLE = true;
             buttonBLE.innerHTML = '❌';
+            batteryWatchdogReset();
 
         } catch (error) {
             if (error.name === 'NotFoundError') {
@@ -223,6 +228,7 @@ function createBleAgent() {
     }
 
     function handleBatteryCharacteristic(event){
+        batteryWatchdogReset();
         let value = event.target.value.getUint8(0);
         let voltage = (value/255.0) * 12
         batteryDisplay.innerHTML = "🔋:" + voltage.toFixed(2) + "V";
@@ -231,6 +237,7 @@ function createBleAgent() {
     async function disconnectBLE() {
         displayBleStatus('Disconnecting');
         try {
+            batteryWatchdogStop();
             await device.removeEventListener('gattserverdisconnected', robotDisconnect);
             await device.gatt.disconnect();
 
@@ -246,6 +253,7 @@ function createBleAgent() {
     }
 
     function robotDisconnect(event) {
+        batteryWatchdogStop();
         displayBleStatus('Not Connected', 'grey');
         isConnectedBLE = false;
         connectBLE();
@@ -261,10 +269,29 @@ function createBleAgent() {
         }
     }
 
+    // Function to create and manage the watchdog timer
+    let timer;
+    const timeout = 1000; // 400ms
+    // Function to start or reset the watchdog timer
+    function batteryWatchdogReset() {
+        displayBleStatus('Connected', '#4dae50'); //green
+        if (timer) {clearTimeout(timer);}
+        timer = setTimeout(() => {
+            displayBleStatus('timeout?', 'black');
+        }, timeout);
+    }
+    // Function to stop the watchdog timer
+    function batteryWatchdogStop() {
+        batteryWatchdogReset()
+        if (timer) {clearTimeout(timer);timer = null;}
+    }
+
     return {
         attemptSend: sendPacketBLE
     };
 }
+
+
 
 // -------------------------------------------- mobile --------------------------------------- //
 
