@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
     toggleInfo.ontouchstart =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
     
-    window.setInterval(renderLoop, 100); // call renderLoop every num milliseconds
+    window.setInterval(renderLoop, 40); // call renderLoop every num milliseconds
 });
 
 function updateMobileSlider(sliderElement, toggleState){
