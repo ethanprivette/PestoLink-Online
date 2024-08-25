@@ -1,5 +1,3 @@
-let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-
 let bleAgent = createBleAgent();
 let keyboardAgent = createKeyboardAgent();
 let axisAgent = createMobileAxisAgent();
@@ -21,6 +19,7 @@ let toggleInfo = document.getElementById('toggle-info');
 // --------------------------- state management ------------------------------------ //
 
 if (localStorage.getItem(toggleMobile.id) == null) {
+    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     if (isMobile) {
         localStorage.setItem(toggleMobile.id, 'true');
     } else {
@@ -149,35 +148,42 @@ function renderLoop() {
 // -------------------------------------------- bluetooth --------------------------------------- //
 
 function createBleAgent() {
-    let buttonBLE = document.getElementById('ble-button')
-    let statusBLE = document.getElementById('ble-status')
-    let batteryDisplay = document.getElementById('battery-level')
+    let parent = document.getElementById('ButtonBLE')
 
     const SERVICE_UUID_PESTOBLE = '27df26c5-83f4-4964-bae0-d7b7cb0a1f54';
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
-    const CHARACTERISTIC_UUID_TELEMETRY = '266d9d74-3e10-4fcd-88d2-cb63b5324d0c';
 
-    if (isMobile){
-        buttonBLE.ontouchend = updateBLE;
-    } else {
-        buttonBLE.onclick = updateBLE;
+    parent.onclick = changeBleState;
+    parent.ontouchend = changeBleState;
+
+    function displayBleStatus(status) {
+        parent.innerHTML = status;
+        switch (status) {
+            case 'Connecting':
+                parent.style.backgroundColor = 'grey';
+                break;
+            case 'Connected':
+                parent.style.backgroundColor = '#4dae50';
+                break;
+            case 'Disconnecting':
+                parent.style.backgroundColor = 'grey';
+                break;
+            case 'Not Connected':
+                parent.style.backgroundColor = 'grey';
+                break;
+            default:
+                parent.style.backgroundColor = '#eb5b5b';
+        }
     }
 
-    function displayBleStatus(status, color) {
-        statusBLE.innerHTML = status;
-        console.log(status)
-        statusBLE.style.backgroundColor = color;
-    }
-
-    let device = null;
+    let device;
     let server;
     let service;
     let characteristic_gamepad;
-    let characteristic_battery;
-    let isConnectedBLE = false;
     let bleUpdateInProgress = false;
+    let isConnectedBLE = false;
 
-    async function updateBLE() {
+    async function changeBleState() {
         if (bleUpdateInProgress) return
         bleUpdateInProgress = true;
         if (!isConnectedBLE) connectBLE();
@@ -186,73 +192,46 @@ function createBleAgent() {
     }
 
     async function connectBLE() {
+        displayBleStatus('Connecting');
 
         try {
-            if (device == null){
-                displayBleStatus('Connecting', 'black');
-                device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
-            } else {
-                displayBleStatus('Attempting Reconnect...', 'black');
-            }
-
+            device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
             server = await device.gatt.connect();
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
-            
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
-            characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
-            await characteristic_battery.startNotifications()
-            await characteristic_battery.addEventListener('characteristicvaluechanged', handleBatteryCharacteristic);
-
             await device.addEventListener('gattserverdisconnected', robotDisconnect);
 
-            displayBleStatus('Connected', '#4dae50'); //green
+            displayBleStatus('Connected');
             isConnectedBLE = true;
-            buttonBLE.innerHTML = '❌';
 
         } catch (error) {
-            if (error.name === 'NotFoundError') {
-                displayBleStatus('No Device Selected', '#eb5b5b');
-            } else if (error.name === 'SecurityError') {
-                displayBleStatus('Security error', '#eb5b5b');
-            } else {
-                console.log( error);
-                displayBleStatus('Connection failed', '#eb5b5b');
-                connectBLE();
-            }
+            displayBleStatus("Error");
+            console.error('Error:', error);
         }
-    }
-
-    function handleBatteryCharacteristic(event){
-        let value = event.target.value.getUint8(0);
-        let voltage = (value/255.0) * 12
-        batteryDisplay.innerHTML = "🔋:" + voltage.toFixed(2) + "V";
     }
 
     async function disconnectBLE() {
         displayBleStatus('Disconnecting');
         try {
-            await device.removeEventListener('gattserverdisconnected', robotDisconnect);
             await device.gatt.disconnect();
 
-            displayBleStatus('Not Connected', 'grey');
+            displayBleStatus('Not Connected');
             isConnectedBLE = false;
-            buttonBLE.innerHTML = '🔗';
-
 
         } catch (error) {
-            displayBleStatus("Error", '#eb5b5b');
+            displayBleStatus("Error");
             console.error('Error:', error);
         }
     }
 
     function robotDisconnect(event) {
-        displayBleStatus('Not Connected', 'grey');
+        displayBleStatus('Not Connected');
         isConnectedBLE = false;
-        connectBLE();
     }
 
     async function sendPacketBLE(byteArray) {
         if (!isConnectedBLE) return;
+        if (bleUpdateInProgress) return;
 
         try {
             await characteristic_gamepad.writeValueWithoutResponse(new Uint8Array(byteArray));
