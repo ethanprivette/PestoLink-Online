@@ -14,6 +14,7 @@ let hackSpacerElement = document.getElementById("hack-spacer");
 
 let toggleMobile = document.getElementById('toggle-mobile-layout');
 let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
+let toggleLegacyPacket = document.getElementById('toggle-legacy');
 let toggleInfo = document.getElementById('toggle-info');
 
 // --------------------------- state management ------------------------------------ //
@@ -31,14 +32,17 @@ if (localStorage.getItem(toggleMobile.id) == null) {
 document.addEventListener('DOMContentLoaded', function () {
     updateMobileSlider(toggleMobile, toggleState=false);
     updateSlider(toggleKeyboardWASD, toggleState=false);
+    updateSlider(toggleLegacyPacket, toggleState=false);
     updateInfoSlider(toggleInfo, toggleState=false);
 
     toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
     toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
+    toggleLegacyPacket.onmousedown = updateSlider.bind(null, toggleLegacyPacket, toggleState=true)
     toggleInfo.onmousedown =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
     
     toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
     toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
+    toggleLegacyPacket.ontouchstart = updateSlider.bind(null, toggleLegacyPacket, toggleState=true)
     toggleInfo.ontouchstart =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
     
     window.setInterval(renderLoop, 40); // call renderLoop every num milliseconds
@@ -137,6 +141,15 @@ function renderLoop() {
             if (key === 21 || key === 31) rawPacket[5] |= (1 << 2)
             if (key === 40 || key === 4) rawPacket[5] |= (1 << 3)
         }
+    }
+
+    if (localStorage.getItem(toggleLegacyPacket.id) === 'true') {
+        rawPacket[0] = rawPacket[1]
+        rawPacket[1] = rawPacket[2]
+        rawPacket[2] = rawPacket[3]
+        rawPacket[3] = rawPacket[4]
+        rawPacket[4] = rawPacket[5]
+        rawPacket[5] = rawPacket[6]
     }
 
     if (!document.hasFocus()) { rawPacket.fill(0, 0, 20); }
