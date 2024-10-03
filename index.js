@@ -212,10 +212,21 @@ function createBleAgent() {
             server = await device.gatt.connect();
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
+          
+            try{
+                characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
+                await characteristic_battery.startNotifications()
+                await characteristic_battery.addEventListener('characteristicvaluechanged', handleBatteryCharacteristic);
+            }catch{
+                console.log("Pestolink version on robot is real old :(")
+            }
+
             await device.addEventListener('gattserverdisconnected', robotDisconnect);
 
-            displayBleStatus('Connected');
             isConnectedBLE = true;
+            buttonBLE.innerHTML = '❌';
+            displayBleStatus('Connected', '#4dae50'); //green
+
 
         } catch (error) {
             displayBleStatus("Error");

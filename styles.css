@@ -112,6 +112,7 @@ body {
     background: grey;
     border-radius: 50%;
     user-select: none;
+    -webkit-user-select: none;
     cursor: pointer;
     height: 13vw;
     width: 13vw;
