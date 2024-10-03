@@ -147,7 +147,7 @@ function renderLoop() {
 
     if (!document.hasFocus()) { rawPacket.fill(0, 0, 20); }
 
-    console.log(rawPacket)
+    //console.log(rawPacket)
     bleAgent.attemptSend(rawPacket);
 }
 
@@ -204,15 +204,19 @@ function createBleAgent() {
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
             
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
-            characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
-            await characteristic_battery.startNotifications()
-            await characteristic_battery.addEventListener('characteristicvaluechanged', handleBatteryCharacteristic);
+            try{
+                characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
+                await characteristic_battery.startNotifications()
+                await characteristic_battery.addEventListener('characteristicvaluechanged', handleBatteryCharacteristic);
+            }catch{
+                console.log("Pestolink version on robot is real old :(")
+            }
 
             await device.addEventListener('gattserverdisconnected', robotDisconnect);
 
             isConnectedBLE = true;
             buttonBLE.innerHTML = '❌';
-            batteryWatchdogReset();
+            displayBleStatus('Connected', '#4dae50'); //green
 
         } catch (error) {
             if (error.name === 'NotFoundError') {
