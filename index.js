@@ -1,3 +1,5 @@
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
 let bleAgent = createBleAgent();
 let keyboardAgent = createKeyboardAgent();
 let axisAgent = createMobileAxisAgent();
@@ -9,18 +11,19 @@ let buttonCallback = null
 
 let mobileElements = document.getElementsByClassName("mobile-only");
 let desktopElements = document.getElementsByClassName("desktop-only");
+
+let helpRow = document.getElementsByClassName("help-row");
+
 let infoElement = document.getElementById("info-container");
 let hackSpacerElement = document.getElementById("hack-spacer");
 
 let toggleMobile = document.getElementById('toggle-mobile-layout');
 let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
-let toggleLegacyPacket = document.getElementById('toggle-legacy');
 let toggleInfo = document.getElementById('toggle-info');
 
 // --------------------------- state management ------------------------------------ //
 
 if (localStorage.getItem(toggleMobile.id) == null) {
-    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
     if (isMobile) {
         localStorage.setItem(toggleMobile.id, 'true');
     } else {
@@ -29,23 +32,22 @@ if (localStorage.getItem(toggleMobile.id) == null) {
     updateMobileSlider(toggleMobile, false);
  }
 
+ if(isMobile) for (let element of helpRow) element.style.display = "none";
+
 document.addEventListener('DOMContentLoaded', function () {
     updateMobileSlider(toggleMobile, toggleState=false);
     updateSlider(toggleKeyboardWASD, toggleState=false);
-    updateSlider(toggleLegacyPacket, toggleState=false);
     updateInfoSlider(toggleInfo, toggleState=false);
 
     toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
     toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleLegacyPacket.onmousedown = updateSlider.bind(null, toggleLegacyPacket, toggleState=true)
     toggleInfo.onmousedown =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
     
     toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
     toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleLegacyPacket.ontouchstart = updateSlider.bind(null, toggleLegacyPacket, toggleState=true)
     toggleInfo.ontouchstart =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
     
-    window.setInterval(renderLoop, 40); // call renderLoop every num milliseconds
+    window.setInterval(renderLoop, 100); // call renderLoop every num milliseconds
 });
 
 function updateMobileSlider(sliderElement, toggleState){
@@ -105,7 +107,7 @@ function renderLoop() {
     //bytes 0: packet version
     //bytes 1-4: axes
     //bytes 5-6: button states
-    //bytes 7-19: pressed keyboard keys
+    //bytes 7-17: pressed keyboard keys
     let rawPacket = new Uint8Array(1 + 4 + 2 + 11)
 
     rawPacket[0] = 0x01; //packet version
@@ -143,15 +145,6 @@ function renderLoop() {
         }
     }
 
-    if (localStorage.getItem(toggleLegacyPacket.id) === 'true') {
-        rawPacket[0] = rawPacket[1]
-        rawPacket[1] = rawPacket[2]
-        rawPacket[2] = rawPacket[3]
-        rawPacket[3] = rawPacket[4]
-        rawPacket[4] = rawPacket[5]
-        rawPacket[5] = rawPacket[6]
-    }
-
     if (!document.hasFocus()) { rawPacket.fill(0, 0, 20); }
 
     //console.log(rawPacket)
@@ -161,42 +154,35 @@ function renderLoop() {
 // -------------------------------------------- bluetooth --------------------------------------- //
 
 function createBleAgent() {
-    let parent = document.getElementById('ButtonBLE')
+    let buttonBLE = document.getElementById('ble-button')
+    let statusBLE = document.getElementById('ble-status')
+    let batteryDisplay = document.getElementById('battery-level')
 
     const SERVICE_UUID_PESTOBLE = '27df26c5-83f4-4964-bae0-d7b7cb0a1f54';
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
+    const CHARACTERISTIC_UUID_TELEMETRY = '266d9d74-3e10-4fcd-88d2-cb63b5324d0c';
 
-    parent.onclick = changeBleState;
-    parent.ontouchend = changeBleState;
-
-    function displayBleStatus(status) {
-        parent.innerHTML = status;
-        switch (status) {
-            case 'Connecting':
-                parent.style.backgroundColor = 'grey';
-                break;
-            case 'Connected':
-                parent.style.backgroundColor = '#4dae50';
-                break;
-            case 'Disconnecting':
-                parent.style.backgroundColor = 'grey';
-                break;
-            case 'Not Connected':
-                parent.style.backgroundColor = 'grey';
-                break;
-            default:
-                parent.style.backgroundColor = '#eb5b5b';
-        }
+    if (isMobile){
+        buttonBLE.ontouchend = updateBLE;
+    } else {
+        buttonBLE.onclick = updateBLE;
     }
 
-    let device;
+    function displayBleStatus(status, color) {
+        statusBLE.innerHTML = status;
+        console.log(status)
+        statusBLE.style.backgroundColor = color;
+    }
+
+    let device = null;
     let server;
     let service;
     let characteristic_gamepad;
-    let bleUpdateInProgress = false;
+    let characteristic_battery;
     let isConnectedBLE = false;
+    let bleUpdateInProgress = false;
 
-    async function changeBleState() {
+    async function updateBLE() {
         if (bleUpdateInProgress) return
         bleUpdateInProgress = true;
         if (!isConnectedBLE) connectBLE();
@@ -205,14 +191,19 @@ function createBleAgent() {
     }
 
     async function connectBLE() {
-        displayBleStatus('Connecting');
 
         try {
-            device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
+            if (device == null){
+                displayBleStatus('Connecting', 'black');
+                device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
+            } else {
+                displayBleStatus('Attempting Reconnect...', 'black');
+            }
+
             server = await device.gatt.connect();
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
+            
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
-          
             try{
                 characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
                 await characteristic_battery.startNotifications()
@@ -227,35 +218,53 @@ function createBleAgent() {
             buttonBLE.innerHTML = '❌';
             displayBleStatus('Connected', '#4dae50'); //green
 
-
         } catch (error) {
-            displayBleStatus("Error");
-            console.error('Error:', error);
+            if (error.name === 'NotFoundError') {
+                displayBleStatus('No Device Selected', '#eb5b5b');
+            } else if (error.name === 'SecurityError') {
+                displayBleStatus('Security error', '#eb5b5b');
+            } else {
+                console.log( error);
+                displayBleStatus('Connection failed', '#eb5b5b');
+                connectBLE();
+            }
         }
+    }
+
+    function handleBatteryCharacteristic(event){
+        batteryWatchdogReset();
+        let value = event.target.value.getUint8(0);
+        let voltage = (value/255.0) * 12
+        batteryDisplay.innerHTML = "🔋:" + voltage.toFixed(2) + "V";
     }
 
     async function disconnectBLE() {
         displayBleStatus('Disconnecting');
         try {
+            batteryWatchdogStop();
+            await device.removeEventListener('gattserverdisconnected', robotDisconnect);
             await device.gatt.disconnect();
 
-            displayBleStatus('Not Connected');
+            displayBleStatus('Not Connected', 'grey');
             isConnectedBLE = false;
+            buttonBLE.innerHTML = '🔗';
+
 
         } catch (error) {
-            displayBleStatus("Error");
+            displayBleStatus("Error", '#eb5b5b');
             console.error('Error:', error);
         }
     }
 
     function robotDisconnect(event) {
-        displayBleStatus('Not Connected');
+        batteryWatchdogStop();
+        displayBleStatus('Not Connected', 'grey');
         isConnectedBLE = false;
+        connectBLE();
     }
 
     async function sendPacketBLE(byteArray) {
         if (!isConnectedBLE) return;
-        if (bleUpdateInProgress) return;
 
         try {
             await characteristic_gamepad.writeValueWithoutResponse(new Uint8Array(byteArray));
@@ -264,10 +273,29 @@ function createBleAgent() {
         }
     }
 
+    // Function to create and manage the watchdog timer
+    let timer;
+    const timeout = 1000; // 400ms
+    // Function to start or reset the watchdog timer
+    function batteryWatchdogReset() {
+        displayBleStatus('Connected', '#4dae50'); //green
+        if (timer) {clearTimeout(timer);}
+        timer = setTimeout(() => {
+            displayBleStatus('timeout?', 'black');
+        }, timeout);
+    }
+    // Function to stop the watchdog timer
+    function batteryWatchdogStop() {
+        batteryWatchdogReset()
+        if (timer) {clearTimeout(timer);timer = null;}
+    }
+
     return {
         attemptSend: sendPacketBLE
     };
 }
+
+
 
 // -------------------------------------------- mobile --------------------------------------- //
 
