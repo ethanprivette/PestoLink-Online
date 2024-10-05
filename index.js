@@ -235,7 +235,16 @@ function createBleAgent() {
         batteryWatchdogReset();
         let value = event.target.value.getUint8(0);
         let voltage = (value/255.0) * 12
-        batteryDisplay.innerHTML = "🔋:" + voltage.toFixed(2) + "V";
+
+        if(voltage >= 7.6) {
+            batteryDisplay.style.textShadow = "0 0 2px green, 0 0 2px green, 0 0 2px green, 0 0 2px green";
+        } else if (voltage >= 7) {
+            batteryDisplay.style.textShadow = "0 0 2px green, 0 0 2px yellow, 0 0 2px yellow, 0 0 2px yellow";
+        } else {
+            batteryDisplay.style.textShadow = "0 0 2px red, 0 0 2px red, 0 0 2px red, 0 0 2px red";
+        }
+
+        batteryDisplay.innerHTML = "&#x1F50B;&#xFE0E; " + voltage.toFixed(1) + "V";
     }
 
     async function disconnectBLE() {

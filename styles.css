@@ -152,6 +152,7 @@ body {
 
 #battery-level {
     background-color: grey;
+    color: white;
     border-radius: 1vw;
     font-size: 2vw;
     grid-row: 1;
