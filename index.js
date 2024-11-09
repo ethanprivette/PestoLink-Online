@@ -134,14 +134,27 @@ function renderLoop() {
 
     if (localStorage.getItem(toggleKeyboardWASD.id) === 'true') {
         for (let key of keyboardArray) {
-            if (key === 19 || key === 28) rawPacket[1] = clampUint8(rawPacket[2] - 128);
-            if (key === 22 || key === 30) rawPacket[1] = clampUint8(rawPacket[2] + 128);
-            if (key === 27 || key === 41) rawPacket[2] = clampUint8(rawPacket[1] - 128);
-            if (key === 29 || key === 37) rawPacket[2] = clampUint8(rawPacket[1] + 128);
-            if (key === 44 || key === 20) rawPacket[5] |= (1 << 0)
-            if (key === 42 || key === 32) rawPacket[5] |= (1 << 1)
-            if (key === 21 || key === 31) rawPacket[5] |= (1 << 2)
-            if (key === 40 || key === 4) rawPacket[5] |= (1 << 3)
+            // WASD for axis 0 and 1
+            if (key === keyToNum["KeyA"]) rawPacket[1] = clampUint8(rawPacket[1] - 128);
+            if (key === keyToNum["KeyD"]) rawPacket[1] = clampUint8(rawPacket[1] + 128);
+            if (key === keyToNum["KeyW"]) rawPacket[2] = clampUint8(rawPacket[2] - 128);
+            if (key === keyToNum["KeyS"]) rawPacket[2] = clampUint8(rawPacket[2] + 128);
+
+            // IJKL for axis 2 and 3
+            if (key === keyToNum["KeyJ"]) rawPacket[3] = clampUint8(rawPacket[3] - 128);
+            if (key === keyToNum["KeyL"]) rawPacket[3] = clampUint8(rawPacket[3] + 128);
+            if (key === keyToNum["KeyI"]) rawPacket[4] = clampUint8(rawPacket[4] - 128);
+            if (key === keyToNum["KeyK"]) rawPacket[4] = clampUint8(rawPacket[4] + 128);
+            
+            // override buttons
+            if (key === keyToNum["KeyZ"])  rawPacket[5] |= (1 << 0);
+            if (key === keyToNum["KeyX"])  rawPacket[5] |= (1 << 1);
+            if (key === keyToNum["KeyC"])  rawPacket[5] |= (1 << 2);
+            if (key === keyToNum["KeyV"])  rawPacket[5] |= (1 << 3);
+            if (key === keyToNum["KeyB"])  rawPacket[5] |= (1 << 4);
+            if (key === keyToNum["KeyN"])  rawPacket[5] |= (1 << 5);
+            if (key === keyToNum["KeyM"])  rawPacket[5] |= (1 << 6);
+            if (key === keyToNum["Comma"]) rawPacket[5] |= (1 << 7);
         }
     }
 
