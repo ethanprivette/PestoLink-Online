@@ -40,7 +40,7 @@ body {
 .container {
     display: flex;
     box-sizing: border-box;
-    margin: 1vw;
+    margin: 0.5vw;
     background: var(--alf-beige);
     border-radius: 2vw;
 }
@@ -119,7 +119,7 @@ body {
 }
 
 #interface {
-    width: 20vw;
+    width: 22vw;
     height: 30vw;
     display: grid;
     grid-template-rows: 1fr 1fr 2fr;
@@ -150,10 +150,12 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-#battery-level {
+#telemetry {
     background-color: grey;
     color: white;
+    overflow: hidden;
     border-radius: 1vw;
+    width: 12vw;
     font-size: 2vw;
     grid-row: 1;
     grid-column: 2;

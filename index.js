@@ -156,7 +156,7 @@ function renderLoop() {
 function createBleAgent() {
     let buttonBLE = document.getElementById('ble-button')
     let statusBLE = document.getElementById('ble-status')
-    let batteryDisplay = document.getElementById('battery-level')
+    let telemetryDisplay = document.getElementById('telemetry')
 
     const SERVICE_UUID_PESTOBLE = '27df26c5-83f4-4964-bae0-d7b7cb0a1f54';
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
@@ -233,18 +233,31 @@ function createBleAgent() {
 
     function handleBatteryCharacteristic(event){
         batteryWatchdogReset();
-        let value = event.target.value.getUint8(0);
-        let voltage = (value/255.0) * 12
 
-        if(voltage >= 7.6) {
-            batteryDisplay.style.textShadow = "0 0 2px green, 0 0 2px green, 0 0 2px green, 0 0 2px green";
-        } else if (voltage >= 7) {
-            batteryDisplay.style.textShadow = "0 0 2px green, 0 0 2px yellow, 0 0 2px yellow, 0 0 2px yellow";
-        } else {
-            batteryDisplay.style.textShadow = "0 0 2px red, 0 0 2px red, 0 0 2px red, 0 0 2px red";
+        const value = event.target.value; // DataView of the characteristic's value
+    
+        let asciiString = '';
+        for (let i = 0; i < Math.min(8, value.byteLength); i++) {
+            asciiString += String.fromCharCode(value.getUint8(i));
+        }
+        //console.log('Received ASCII string:', asciiString);
+        telemetryDisplay.innerHTML = asciiString;
+        
+        // Parse the last three bytes as an RGB hex color code
+        if (value.byteLength >= 9) {
+            const r = value.getUint8(8).toString(16).padStart(2, '0');  // Red
+            const g = value.getUint8(9).toString(16).padStart(2, '0');  // Green
+            const b = value.getUint8(10).toString(16).padStart(2, '0');  // Blue
+            const hexColor = `#${r}${g}${b}`;
+        
+            //console.log('Hex color:', hexColor);
+        
+            // Set the text shadow color
+            telemetryDisplay.style.textShadow = `0 0 2px ${hexColor}, 0 0 2px ${hexColor}, 0 0 2px ${hexColor}, 0 0 2px ${hexColor}`;
         }
 
-        batteryDisplay.innerHTML = "&#x1F50B;&#xFE0E; " + voltage.toFixed(1) + "V";
+
+        //batteryDisplay.innerHTML = "&#x1F50B;&#xFE0E; " + voltage.toFixed(1) + "V";
     }
 
     async function disconnectBLE() {
@@ -254,7 +267,7 @@ function createBleAgent() {
             await device.removeEventListener('gattserverdisconnected', robotDisconnect);
             await device.gatt.disconnect();
 
-            displayBleStatus('Not Connected', 'grey');
+            displayBleStatus('Not Connected', 'black');
             isConnectedBLE = false;
             buttonBLE.innerHTML = '🔗';
 
@@ -267,7 +280,7 @@ function createBleAgent() {
 
     function robotDisconnect(event) {
         batteryWatchdogStop();
-        displayBleStatus('Not Connected', 'grey');
+        displayBleStatus('Not Connected', 'black');
         isConnectedBLE = false;
         connectBLE();
     }
