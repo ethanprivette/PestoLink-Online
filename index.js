@@ -23,8 +23,6 @@ let toggleInfo = document.getElementById('toggle-info');
 
 // --------------------------- state management ------------------------------------ //
 
-//test
-
 if (localStorage.getItem(toggleMobile.id) == null) {
     if (isMobile) {
         localStorage.setItem(toggleMobile.id, 'true');
