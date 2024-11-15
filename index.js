@@ -170,6 +170,7 @@ function createBleAgent() {
     let buttonBLE = document.getElementById('ble-button')
     let statusBLE = document.getElementById('ble-status')
     let telemetryDisplay = document.getElementById('telemetry')
+    let pathDisplay = document.getElementById('path-selector')
 
     const SERVICE_UUID_PESTOBLE = '27df26c5-83f4-4964-bae0-d7b7cb0a1f54';
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
@@ -177,14 +178,23 @@ function createBleAgent() {
 
     if (isMobile){
         buttonBLE.ontouchend = updateBLE;
+        pathDisplay.ontouchend = updatePath;
     } else {
         buttonBLE.onclick = updateBLE;
+        pathDisplay.onclick = updatePath;
+
     }
 
     function displayBleStatus(status, color) {
         statusBLE.innerHTML = status;
         console.log(status)
         statusBLE.style.backgroundColor = color;
+    }
+
+    function displayPathName(name, color) {
+        pathDisplay.innerHTML = name;
+        console.log(name)
+        pathDisplay.style.backgroundColor = color;
     }
 
     let device = null;
@@ -194,6 +204,8 @@ function createBleAgent() {
     let characteristic_battery;
     let isConnectedBLE = false;
     let bleUpdateInProgress = false;
+    let pathUpdateInProgress = false;
+    let pathSelected = false;
 
     async function updateBLE() {
         if (bleUpdateInProgress) return
@@ -201,6 +213,39 @@ function createBleAgent() {
         if (!isConnectedBLE) connectBLE();
         else disconnectBLE();
         bleUpdateInProgress = false;
+    }
+
+    async function updatePath() {
+        if (pathUpdateInProgress) return
+        pathUpdateInProgress = true;
+        if (!pathSelected) choosePath();
+        else removePath();
+        pathUpdateInProgress = false;
+    }
+
+    async function choosePath() {
+        try {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = e => {
+                let path = e.target.files[0];
+
+                if (path.name == null) {
+                    displayPathName('No auto selected', 'grey');
+                } else {
+                    displayPathName(path.name, 'green');
+                }
+            };
+            input.click();   
+            pathSelected = true;
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
+    async function removePath() {
+        displayPathName('no auto Selected', 'rgb(189, 188, 188)');
+        pathSelected = false;
     }
 
     async function connectBLE() {

@@ -83,7 +83,7 @@ body {
 #desktop-axis,
 #desktop-button {
     width: 30vw;
-    height: 30vw;
+    height: 34vw;
     display: none;
 }
 
@@ -120,9 +120,9 @@ body {
 
 #interface {
     width: 22vw;
-    height: 30vw;
+    height: 34vw;
     display: grid;
-    grid-template-rows: 1fr 1fr 2fr;
+    grid-template-rows: 1fr 1fr 1fr 2fr;
     grid-template-columns: 1fr 1fr;
     grid-gap: 1vw;
     padding: 1vw;
@@ -164,9 +164,30 @@ body {
 #ble-status {
     background-color: black;
     font-size: 2vw;
+    grid-row: 3;
+    grid-column: 1;
+    grid-column: span 2;
+}
+
+#path-selector {
+    background-color: rgb(189, 188, 188);
+    font-size: 2vw;
     grid-row: 2;
     grid-column: 1;
     grid-column: span 2;
+    cursor: pointer;
+    border: none;
+    text-align: center;
+    transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+#path-selector:hover {
+    background-color: rgb(121, 121, 121);
+}
+#path-selector:active {
+    background-color: rgb(159, 159, 159);
+    transform: translateY(2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 
