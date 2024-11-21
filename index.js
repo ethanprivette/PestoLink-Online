@@ -191,7 +191,7 @@ function createBleAgent() {
     let server;
     let service;
     let characteristic_gamepad;
-    let characteristic_battery;
+    let characteristic_telemetry;
     let isConnectedBLE = false;
     let bleUpdateInProgress = false;
 
@@ -210,7 +210,7 @@ function createBleAgent() {
                 displayBleStatus('Connecting', 'black');
                 device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
             } else {
-                displayBleStatus('Attempting Reconnect...', 'black');
+                displayBleStatus(`Reconnecting to <br> ${device.name}`, 'black');
             }
 
             server = await device.gatt.connect();
@@ -218,9 +218,9 @@ function createBleAgent() {
             
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
             try{
-                characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
-                await characteristic_battery.startNotifications()
-                await characteristic_battery.addEventListener('characteristicvaluechanged', handleBatteryCharacteristic);
+                characteristic_telemetry = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
+                await characteristic_telemetry.startNotifications()
+                await characteristic_telemetry.addEventListener('characteristicvaluechanged', handleTelemetryCharacteristic);
             }catch{
                 console.log("Pestolink version on robot is real old :(")
             }
@@ -229,7 +229,7 @@ function createBleAgent() {
 
             isConnectedBLE = true;
             buttonBLE.innerHTML = '❌';
-            displayBleStatus('Connected', '#4dae50'); //green
+            displayBleStatus(`Connected to <br> ${device.name}`, '#4dae50'); //green
 
         } catch (error) {
             if (error.name === 'NotFoundError') {
@@ -244,7 +244,7 @@ function createBleAgent() {
         }
     }
 
-    function handleBatteryCharacteristic(event){
+    function handleTelemetryCharacteristic(event){
         batteryWatchdogReset();
 
         const value = event.target.value; // DataView of the characteristic's value
@@ -308,7 +308,6 @@ function createBleAgent() {
         }
     }
 
-    // Function to create and manage the watchdog timer
     let timer;
     const timeout = 1000; // 400ms
     // Function to start or reset the watchdog timer
@@ -329,8 +328,6 @@ function createBleAgent() {
         attemptSend: sendPacketBLE
     };
 }
-
-
 
 // -------------------------------------------- mobile --------------------------------------- //
 
