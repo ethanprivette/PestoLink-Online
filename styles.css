@@ -171,10 +171,11 @@ body {
 
 #path-selector {
     background-color: rgb(189, 188, 188);
+    border-radius: 1vw;
     font-size: 2vw;
     grid-row: 2;
-    grid-column: 1;
-    grid-column: span 2;
+    grid-column: 0.5;
+    grid-column: span 1.5;
     cursor: pointer;
     border: none;
     text-align: center;
@@ -190,6 +191,18 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+#alliance-selector {
+    background-color: rgb(0, 0, 255);
+    border-radius: 1vw;
+    font-size: 1.5vw;
+    grid-row: 2;
+    grid-column: 1;
+    grid-column: span 0.5;
+    cursor: pointer;
+    border: none;
+    text-align: center;
+    transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+}
 
 #mobile-button button {
     font-size: 5vw;

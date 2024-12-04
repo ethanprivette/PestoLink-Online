@@ -171,6 +171,7 @@ function createBleAgent() {
     let statusBLE = document.getElementById('ble-status')
     let telemetryDisplay = document.getElementById('telemetry')
     let pathDisplay = document.getElementById('path-selector')
+    let allianceSelector = document.getElementById('alliance-selector')
 
     const SERVICE_UUID_PESTOBLE = '27df26c5-83f4-4964-bae0-d7b7cb0a1f54';
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
@@ -179,10 +180,11 @@ function createBleAgent() {
     if (isMobile){
         buttonBLE.ontouchend = updateBLE;
         pathDisplay.ontouchend = updatePath;
+        allianceSelector.ontouchend = updateAlliance;
     } else {
         buttonBLE.onclick = updateBLE;
         pathDisplay.onclick = updatePath;
-
+        allianceSelector.onclick = updateAlliance;
     }
 
     function displayBleStatus(status, color) {
@@ -197,15 +199,21 @@ function createBleAgent() {
         pathDisplay.style.backgroundColor = color;
     }
 
+    function displayAllianceColor(color) {
+        allianceSelector.style.backgroundColor = color;
+    }
+
     let device = null;
     let server;
     let service;
     let characteristic_gamepad;
     let characteristic_battery;
+    let loadedPath;
     let isConnectedBLE = false;
     let bleUpdateInProgress = false;
     let pathUpdateInProgress = false;
     let pathSelected = false;
+    let redAlliance = false;
 
     async function updateBLE() {
         if (bleUpdateInProgress) return
@@ -223,17 +231,41 @@ function createBleAgent() {
         pathUpdateInProgress = false;
     }
 
+    async function updateAlliance() {
+        if (redAlliance) {
+            displayAllianceColor('blue');
+            redAlliance = false;
+        } else if (!redAlliance) {
+            displayAllianceColor('red');
+            redAlliance = true;
+        } else {
+            console.error("something went wrong :(");
+        }
+    }
+
     async function choosePath() {
         try {
             var input = document.createElement('input');
             input.type = 'file';
-            input.onchange = e => {
+            input.accept = '.json';
+            input.onchange = async e => {
                 let path = e.target.files[0];
 
-                if (path.name == null) {
-                    displayPathName('No auto selected', 'grey');
-                } else {
+                if (!path) {
+                    displayPathName('no auto selected', 'grey');
+                }
+
+                try {
+                    const content = await readFile(path);
+                    const pathJson = JSON.parse(content);
                     displayPathName(path.name, 'green');
+
+                    loadedPath = pathJson
+                    console.log(pathJson.waypoints)
+                    console.log(pathJson.waypoints[0].anchor.x  );
+                } catch (error) {
+                    displayPathName('Invalid JSON', 'red');
+                    console.error(error);
                 }
             };
             input.click();   
@@ -243,8 +275,21 @@ function createBleAgent() {
         }
     }
 
+    async function readFile(file) {
+        const reader = new FileReader();
+
+        reader.readAsText(file);
+
+        const content = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader    .error);
+        });
+
+        return content;
+    }
+
     async function removePath() {
-        displayPathName('no auto Selected', 'rgb(189, 188, 188)');
+        displayPathName('no auto selected', '');
         pathSelected = false;
     }
 
