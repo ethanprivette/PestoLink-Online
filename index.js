@@ -28,6 +28,7 @@ let currentTime = Date.now();
 let startTime = 0;
 let timestamp = 0;
 let hPressed = false;
+let redAlliance = false;
 
 // --------------------------- state management ------------------------------------ //
 
@@ -38,27 +39,27 @@ if (localStorage.getItem(toggleMobile.id) == null) {
         localStorage.setItem(toggleMobile.id, 'false');
     }
     updateMobileSlider(toggleMobile, false);
- }
+}
 
- if(isMobile) for (let element of helpRow) element.style.display = "none";
+if (isMobile) for (let element of helpRow) element.style.display = "none";
 
 document.addEventListener('DOMContentLoaded', function () {
-    updateMobileSlider(toggleMobile, toggleState=false);
-    updateSlider(toggleKeyboardWASD, toggleState=false);
-    updateInfoSlider(toggleInfo, toggleState=false);
+    updateMobileSlider(toggleMobile, toggleState = false);
+    updateSlider(toggleKeyboardWASD, toggleState = false);
+    updateInfoSlider(toggleInfo, toggleState = false);
 
-    toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
-    toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleInfo.onmousedown =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
-    
-    toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
-    toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleInfo.ontouchstart =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
-    
+    toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState = true)
+    toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState = true)
+    toggleInfo.onmousedown = updateInfoSlider.bind(null, toggleInfo, toggleState = true)
+
+    toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState = true)
+    toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState = true)
+    toggleInfo.ontouchstart = updateInfoSlider.bind(null, toggleInfo, toggleState = true)
+
     window.setInterval(renderLoop, 100); // call renderLoop every num milliseconds
 });
 
-function updateMobileSlider(sliderElement, toggleState){
+function updateMobileSlider(sliderElement, toggleState) {
     updateSlider(sliderElement, toggleState);
 
     if (localStorage.getItem(toggleMobile.id) === 'true') {
@@ -74,7 +75,7 @@ function updateMobileSlider(sliderElement, toggleState){
     }
 }
 
-function updateInfoSlider(sliderElement, toggleState){
+function updateInfoSlider(sliderElement, toggleState) {
     updateSlider(sliderElement, toggleState);
 
     if (localStorage.getItem(toggleInfo.id) === 'true') {
@@ -86,25 +87,25 @@ function updateInfoSlider(sliderElement, toggleState){
     }
 }
 
-function updateSlider(sliderElement, toggleState){
-    if(toggleState){
-        if ( localStorage.getItem(sliderElement.id) === 'true') {
+function updateSlider(sliderElement, toggleState) {
+    if (toggleState) {
+        if (localStorage.getItem(sliderElement.id) === 'true') {
             localStorage.setItem(sliderElement.id, 'false');
         } else {
             localStorage.setItem(sliderElement.id, 'true');
-        }        
+        }
     }
 
-    if ( localStorage.getItem(sliderElement.id) === 'true') {
+    if (localStorage.getItem(sliderElement.id) === 'true') {
         sliderElement.style.backgroundColor = 'var(--alf-green)';
         sliderElement.firstElementChild.style.transform = 'translateX(2vw)';
-        sliderElement.firstElementChild.style.webkitTransform  = 'translateX(2vw)';
+        sliderElement.firstElementChild.style.webkitTransform = 'translateX(2vw)';
         sliderElement.firstElementChild.style.msTransform = 'translateX(2vw)';
 
     } else {
         sliderElement.style.backgroundColor = 'rgb(189, 188, 188)';
         sliderElement.firstElementChild.style.transform = 'none';
-        sliderElement.firstElementChild.style.webkitTransform  = 'none';
+        sliderElement.firstElementChild.style.webkitTransform = 'none';
         sliderElement.firstElementChild.style.msTransform = 'none';
     }
 }
@@ -153,56 +154,67 @@ function renderLoop() {
             if (key === keyToNum["KeyL"]) rawPacket[3] = clampUint8(rawPacket[3] + 128);
             if (key === keyToNum["KeyI"]) rawPacket[4] = clampUint8(rawPacket[4] - 128);
             if (key === keyToNum["KeyK"]) rawPacket[4] = clampUint8(rawPacket[4] + 128);
-            
+
             // override buttons
-            if (key === keyToNum["KeyZ"])  rawPacket[5] |= (1 << 0);
-            if (key === keyToNum["KeyX"])  rawPacket[5] |= (1 << 1);
-            if (key === keyToNum["KeyC"])  rawPacket[5] |= (1 << 2);
-            if (key === keyToNum["KeyV"])  rawPacket[5] |= (1 << 3);
-            if (key === keyToNum["KeyB"])  rawPacket[5] |= (1 << 4);
-            if (key === keyToNum["KeyN"])  rawPacket[5] |= (1 << 5);
-            if (key === keyToNum["KeyM"])  rawPacket[5] |= (1 << 6);
+            if (key === keyToNum["KeyZ"]) rawPacket[5] |= (1 << 0);
+            if (key === keyToNum["KeyX"]) rawPacket[5] |= (1 << 1);
+            if (key === keyToNum["KeyC"]) rawPacket[5] |= (1 << 2);
+            if (key === keyToNum["KeyV"]) rawPacket[5] |= (1 << 3);
+            if (key === keyToNum["KeyB"]) rawPacket[5] |= (1 << 4);
+            if (key === keyToNum["KeyN"]) rawPacket[5] |= (1 << 5);
+            if (key === keyToNum["KeyM"]) rawPacket[5] |= (1 << 6);
             if (key === keyToNum["Comma"]) rawPacket[5] |= (1 << 7);
         }
     }
 
     for (let key of keyboardArray) {
-        if (key === keyToNum["KeyH"] || hPressed) {
-            if (Date.now() > startTime + 15000) {
-                startTime = Date.now();
-            }
+        if (key === keyToNum["KeyH"]) {
             hPressed = true;
+        }
+    }
 
-            currentTime = Date.now();
-            timestamp = (currentTime - startTime) / 1000;
+    if (hPressed) {
+        if (Date.now() > startTime + 15000) {
+            startTime = Date.now();
+        }
 
-            if (timestamp > autoIntructions[autoIntructions.length-1].end || timestamp > 15) {
-                hPressed = false;
+        currentTime = Date.now();
+        timestamp = (currentTime - startTime) / 1000;
+
+        if (timestamp >= autoIntructions[autoIntructions.length - 1].end || timestamp >= 15) {
+            hPressed = false;
+        } else {
+            hPressed = true;
+        }
+
+        for (let instruction of autoIntructions) {
+            if (instruction.start <= timestamp && instruction.end > timestamp) {
+                currentInstruction = instruction;
             }
+        }
 
-            for (let instruction of autoIntructions) {
-                if (instruction.start <= timestamp && instruction.end > timestamp) {
-                    currentInstruction = instruction;
-                }
-            }
-
-            // console.log(currentInstruction);
-
-            if (currentInstruction.type == "Drive Time") {
-                rawPacket[2] = clampUint8(rawPacket[2] - 128)
-                console.log(rawPacket[2]);
-            } else if (currentInstruction.type == "Turn Time") {
-                if (currentInstruction.direction == "CW") {
+        if (currentInstruction.type == "Drive Time") {
+            rawPacket[2] = clampUint8(rawPacket[2] - 128)
+            console.log(rawPacket[2]);
+        } else if (currentInstruction.type == "Turn Time") {
+            if (currentInstruction.direction == "CW") {
+                if (!redAlliance) {
                     rawPacket[1] = clampUint8(rawPacket[1] + 128);
-                    // console.log(rawPacket[1]);
-                } else if (currentInstruction.direction == "CCW") {
+                } else {
                     rawPacket[1] = clampUint8(rawPacket[1] - 128);
-                    // console.log(rawPacket[1]);
                 }
-                // console.log("turning")
-            } else {
-                console.error("erm what the sigma");
+                console.log(rawPacket[1]);
+            } else if (currentInstruction.direction == "CCW") {
+                if (!redAlliance) {
+                    rawPacket[1] = clampUint8(rawPacket[1] - 128);
+                } else {
+                    rawPacket[1] = clampUint8(rawPacket[1] + 128);
+                }
+                console.log(rawPacket[1]);
             }
+            // console.log("turning")
+        } else {
+            console.error("erm what the sigma");
         }
     }
 
@@ -225,7 +237,7 @@ function createBleAgent() {
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
     const CHARACTERISTIC_UUID_TELEMETRY = '266d9d74-3e10-4fcd-88d2-cb63b5324d0c';
 
-    if (isMobile){
+    if (isMobile) {
         buttonBLE.ontouchend = updateBLE;
         pathDisplay.ontouchend = updatePath;
         allianceSelector.ontouchend = updateAlliance;
@@ -261,7 +273,6 @@ function createBleAgent() {
     let bleUpdateInProgress = false;
     let pathUpdateInProgress = false;
     let pathSelected = false;
-    let redAlliance = false;
     let settingsConfirmed = false;
 
     let maxSpeed = 0.0;
@@ -302,7 +313,7 @@ function createBleAgent() {
         try {
             var input = document.createElement('input');
             input.type = 'file';
-            input.accept = '.json';
+            input.accept = '.path, .json';
             input.onchange = async e => {
                 let file = e.target.files[0];
 
@@ -331,7 +342,7 @@ function createBleAgent() {
                 } else {
                     try {
                         displayPathName(file.name, 'green');
-    
+
                         loadedPath = fileJson
                         pathSelected = true;
 
@@ -345,7 +356,7 @@ function createBleAgent() {
                     }
                 }
             };
-            input.click();   
+            input.click();
         } catch (error) {
             console.log(error)
         }
@@ -358,7 +369,7 @@ function createBleAgent() {
 
         const content = await new Promise((resolve, reject) => {
             reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(reader    .error);
+            reader.onerror = () => reject(reader.error);
         });
 
         return content;
@@ -378,7 +389,7 @@ function createBleAgent() {
         autoIntructions = [];
 
         for (let i = 1; i < numWaypoints; i++) {
-            const start = waypoints[i-1];
+            const start = waypoints[i - 1];
             const end = waypoints[i];
 
             const dx = end.anchor.x - start.anchor.x;
@@ -390,11 +401,14 @@ function createBleAgent() {
 
             let turnDir;
             if (turnAngle > 0) {
-                turnDir = "CW";
-            } else if (targetAngle < 0) {
                 turnDir = "CCW";
+            } else if (targetAngle < 0) {
+                turnDir = "CW";
+            } else if (turnAngle == 0) {
+                turnDir = "No Turn";
             } else {
                 console.error("something went bad :(");
+                break;
             }
 
             while (turnAngle > Math.PI) turnAngle -= 2 * Math.PI;
@@ -415,11 +429,14 @@ function createBleAgent() {
 
             totalTime += turnTime;
 
-            autoIntructions.push({
-                type: "Turn Time",
-                start: totalTime - turnTime,
-                end: totalTime,
-                direction: turnDir});
+            if (turnDir != "No Turn") {
+                autoIntructions.push({
+                    type: "Turn Time",
+                    start: totalTime - turnTime,
+                    end: totalTime,
+                    direction: turnDir
+                });
+            }
 
             const timeToMaxSpeed = maxSpeed / maxAccel;
             const distToMaxSpeed = 0.5 * maxAccel * Math.pow(timeToMaxSpeed, 2);
@@ -438,7 +455,8 @@ function createBleAgent() {
             autoIntructions.push({
                 type: "Drive Time",
                 start: totalTime - segmentTime,
-                end: totalTime});
+                end: totalTime
+            });
         }
         console.log(totalTime);
         console.log(autoIntructions);
@@ -450,7 +468,7 @@ function createBleAgent() {
     async function connectBLE() {
 
         try {
-            if (device == null){
+            if (device == null) {
                 displayBleStatus('Connecting', 'black');
                 device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
             } else {
@@ -459,13 +477,13 @@ function createBleAgent() {
 
             server = await device.gatt.connect();
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
-            
+
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
-            try{
+            try {
                 characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
                 await characteristic_battery.startNotifications()
                 await characteristic_battery.addEventListener('characteristicvaluechanged', handleBatteryCharacteristic);
-            }catch{
+            } catch {
                 console.log("Pestolink version on robot is real old :(")
             }
 
@@ -481,34 +499,34 @@ function createBleAgent() {
             } else if (error.name === 'SecurityError') {
                 displayBleStatus('Security error', '#eb5b5b');
             } else {
-                console.log( error);
+                console.log(error);
                 displayBleStatus('Connection failed', '#eb5b5b');
                 connectBLE();
             }
         }
     }
 
-    function handleBatteryCharacteristic(event){
+    function handleBatteryCharacteristic(event) {
         batteryWatchdogReset();
 
         const value = event.target.value; // DataView of the characteristic's value
-    
+
         let asciiString = '';
         for (let i = 0; i < Math.min(8, value.byteLength); i++) {
             asciiString += String.fromCharCode(value.getUint8(i));
         }
         //console.log('Received ASCII string:', asciiString);
         telemetryDisplay.innerHTML = asciiString;
-        
+
         // Parse the last three bytes as an RGB hex color code
         if (value.byteLength >= 9) {
             const r = value.getUint8(8).toString(16).padStart(2, '0');  // Red
             const g = value.getUint8(9).toString(16).padStart(2, '0');  // Green
             const b = value.getUint8(10).toString(16).padStart(2, '0');  // Blue
             const hexColor = `#${r}${g}${b}`;
-        
+
             //console.log('Hex color:', hexColor);
-        
+
             // Set the text shadow color
             telemetryDisplay.style.textShadow = `0 0 2px ${hexColor}, 0 0 2px ${hexColor}, 0 0 2px ${hexColor}, 0 0 2px ${hexColor}`;
         }
@@ -558,7 +576,7 @@ function createBleAgent() {
     // Function to start or reset the watchdog timer
     function batteryWatchdogReset() {
         displayBleStatus('Connected', '#4dae50'); //green
-        if (timer) {clearTimeout(timer);}
+        if (timer) { clearTimeout(timer); }
         timer = setTimeout(() => {
             displayBleStatus('timeout?', 'black');
         }, timeout);
@@ -566,7 +584,7 @@ function createBleAgent() {
     // Function to stop the watchdog timer
     function batteryWatchdogStop() {
         batteryWatchdogReset()
-        if (timer) {clearTimeout(timer);timer = null;}
+        if (timer) { clearTimeout(timer); timer = null; }
     }
 
     return {
