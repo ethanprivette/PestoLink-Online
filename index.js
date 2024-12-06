@@ -21,6 +21,14 @@ let toggleMobile = document.getElementById('toggle-mobile-layout');
 let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
 let toggleInfo = document.getElementById('toggle-info');
 
+let autoIntructions = [];
+let lastPressed = null;
+let currentInstruction = null;
+let currentTime = Date.now();
+let startTime = 0;
+let timestamp = 0;
+let hPressed = false;
+
 // --------------------------- state management ------------------------------------ //
 
 if (localStorage.getItem(toggleMobile.id) == null) {
@@ -158,9 +166,49 @@ function renderLoop() {
         }
     }
 
+    for (let key of keyboardArray) {
+        if (key === keyToNum["KeyH"] || hPressed) {
+            if (Date.now() > startTime + 15000) {
+                startTime = Date.now();
+            }
+            hPressed = true;
+
+            currentTime = Date.now();
+            timestamp = (currentTime - startTime) / 1000;
+
+            if (timestamp > autoIntructions[autoIntructions.length-1].end || timestamp > 15) {
+                hPressed = false;
+            }
+
+            for (let instruction of autoIntructions) {
+                if (instruction.start <= timestamp && instruction.end > timestamp) {
+                    currentInstruction = instruction;
+                }
+            }
+
+            // console.log(currentInstruction);
+
+            if (currentInstruction.type == "Drive Time") {
+                rawPacket[2] = clampUint8(rawPacket[2] - 128)
+                console.log(rawPacket[2]);
+            } else if (currentInstruction.type == "Turn Time") {
+                if (currentInstruction.direction == "CW") {
+                    rawPacket[1] = clampUint8(rawPacket[1] + 128);
+                    // console.log(rawPacket[1]);
+                } else if (currentInstruction.direction == "CCW") {
+                    rawPacket[1] = clampUint8(rawPacket[1] - 128);
+                    // console.log(rawPacket[1]);
+                }
+                // console.log("turning")
+            } else {
+                console.error("erm what the sigma");
+            }
+        }
+    }
+
     if (!document.hasFocus()) { rawPacket.fill(0, 0, 20); }
 
-    //console.log(rawPacket)
+    // console.log(rawPacket)
     bleAgent.attemptSend(rawPacket);
 }
 
@@ -214,6 +262,12 @@ function createBleAgent() {
     let pathUpdateInProgress = false;
     let pathSelected = false;
     let redAlliance = false;
+    let settingsConfirmed = false;
+
+    let maxSpeed = 0.0;
+    let maxAccel = 0.0;
+    let maxAngleSpeed = 0.0;
+    let maxAngleAccel = 0.0;
 
     async function updateBLE() {
         if (bleUpdateInProgress) return
@@ -226,8 +280,9 @@ function createBleAgent() {
     async function updatePath() {
         if (pathUpdateInProgress) return
         pathUpdateInProgress = true;
-        if (!pathSelected) choosePath();
-        else removePath();
+        if (!settingsConfirmed) chooseFile();
+        else if (settingsConfirmed && !pathSelected) chooseFile();
+        else removeFile();
         pathUpdateInProgress = false;
     }
 
@@ -243,33 +298,54 @@ function createBleAgent() {
         }
     }
 
-    async function choosePath() {
+    async function chooseFile() {
         try {
             var input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
             input.onchange = async e => {
-                let path = e.target.files[0];
+                let file = e.target.files[0];
 
-                if (!path) {
+                const content = await readFile(file);
+                const fileJson = JSON.parse(content);
+
+                if (!file) {
                     displayPathName('no auto selected', 'grey');
-                }
+                } else if (file.name == "settings.json") {
+                    maxSpeed = fileJson.defaultMaxVel;
+                    maxAccel = fileJson.defaultMaxAccel;
+                    maxAngleSpeed = fileJson.defaultMaxAngVel;
+                    maxAngleAccel = fileJson.defaultMaxAngAccel;
 
-                try {
-                    const content = await readFile(path);
-                    const pathJson = JSON.parse(content);
-                    displayPathName(path.name, 'green');
+                    console.log(maxAngleSpeed);
 
-                    loadedPath = pathJson
-                    console.log(pathJson.waypoints)
-                    console.log(pathJson.waypoints[0].anchor.x  );
-                } catch (error) {
-                    displayPathName('Invalid JSON', 'red');
-                    console.error(error);
+                    if (settingsConfirmed) {
+                        displayPathName('✔, settings overridden', 'green');
+                        settingsConfirmed = true;
+                    } else {
+                        displayPathName('✔, select path', 'green');
+                        settingsConfirmed = true;
+                    }
+                } else if (!settingsConfirmed && file.name != "settings.json") {
+                    displayPathName('Select settings first', 'red');
+                } else {
+                    try {
+                        displayPathName(file.name, 'green');
+    
+                        loadedPath = fileJson
+                        pathSelected = true;
+
+                        console.log(fileJson)
+                        // console.log(fileJson.waypoints[0].anchor.x);
+
+                        calculatePathTime();
+                    } catch (error) {
+                        displayPathName('Invalid JSON', 'red');
+                        console.error(error);
+                    }
                 }
             };
             input.click();   
-            pathSelected = true;
         } catch (error) {
             console.log(error)
         }
@@ -288,9 +364,87 @@ function createBleAgent() {
         return content;
     }
 
-    async function removePath() {
+    async function removeFile() {
         displayPathName('no auto selected', '');
         pathSelected = false;
+    }
+
+    async function calculatePathTime() {
+        const numWaypoints = loadedPath.waypoints.length;
+        const waypoints = loadedPath.waypoints;
+        const startAngle = loadedPath.idealStartingState.rotation;
+        const currentAngle = startAngle;
+        let totalTime = 0.0;
+        autoIntructions = [];
+
+        for (let i = 1; i < numWaypoints; i++) {
+            const start = waypoints[i-1];
+            const end = waypoints[i];
+
+            const dx = end.anchor.x - start.anchor.x;
+            const dy = end.anchor.y - start.anchor.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const targetAngle = Math.atan2(dy, dx);
+
+            let turnAngle = targetAngle - currentAngle;
+
+            let turnDir;
+            if (turnAngle > 0) {
+                turnDir = "CW";
+            } else if (targetAngle < 0) {
+                turnDir = "CCW";
+            } else {
+                console.error("something went bad :(");
+            }
+
+            while (turnAngle > Math.PI) turnAngle -= 2 * Math.PI;
+            while (turnAngle < -Math.PI) turnAngle += 2 * Math.PI;
+
+            const absTurnAngle = Math.abs(turnAngle);
+            const timeToMaxSpeedAngle = maxAngleSpeed / maxAngleAccel;
+            const angleToMaxSpeed = 0.5 * maxAngleAccel * Math.pow(timeToMaxSpeedAngle, 2);
+
+            let turnTime;
+            if (absTurnAngle <= 2 * angleToMaxSpeed) {
+                turnTime = Math.sqrt(2 * absTurnAngle / maxAngleAccel);
+            } else {
+                const remainingAngle = absTurnAngle - 2 * angleToMaxSpeed;
+                const constantSpeedTime = remainingAngle / maxAngleSpeed;
+                turnTime = 2 * timeToMaxSpeed + constantSpeedTime;
+            }
+
+            totalTime += turnTime;
+
+            autoIntructions.push({
+                type: "Turn Time",
+                start: totalTime - turnTime,
+                end: totalTime,
+                direction: turnDir});
+
+            const timeToMaxSpeed = maxSpeed / maxAccel;
+            const distToMaxSpeed = 0.5 * maxAccel * Math.pow(timeToMaxSpeed, 2);
+
+            let segmentTime;
+            if (dist <= 2 * distToMaxSpeed) {
+                segmentTime = Math.sqrt(2 * dist / maxAccel);
+            } else {
+                const remainingDist = dist - 2 * distToMaxSpeed;
+                const constantSpeedTime = remainingDist / maxSpeed;
+                segmentTime = 2 * timeToMaxSpeed + constantSpeedTime;
+            }
+
+            totalTime += segmentTime;
+
+            autoIntructions.push({
+                type: "Drive Time",
+                start: totalTime - segmentTime,
+                end: totalTime});
+        }
+        console.log(totalTime);
+        console.log(autoIntructions);
+        if (totalTime > 15) {
+            displayPathName('Will cut at 15 sec', 'orange');
+        }
     }
 
     async function connectBLE() {
