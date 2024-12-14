@@ -167,7 +167,7 @@ function renderLoop() {
         rawPacket[4] = 127;
     }
 
-    console.log(rawPacket)
+    //console.log(rawPacket)
     bleAgent.attemptSend(rawPacket);
 }
 
