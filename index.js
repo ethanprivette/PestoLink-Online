@@ -530,30 +530,33 @@ function createGamepadAgent() {
     }
 
     function getButtonBytes() {
-        let gamepad = getSelectedGamepad();
+        const gamepad = getSelectedGamepad();
+        let buttonStates = 0; // Single integer to hold all 16 button states
+    
         if (gamepad) {
-            var firstByte = 0;
-            var secondByte = 0;
-            for (let i = 0; i < 8; i++) {
-                if (gamepad.buttons[i].pressed) {
-                    firstByte |= (gamepad.buttons[i].pressed << i);
-                    buttonElements[i].style.background = 'var(--alf-green)';
-                } else {
-                    buttonElements[i].style.background = 'grey';
+            const buttonCount = Math.min(gamepad.buttons.length, 16); // Limit to 16 buttons
+    
+            for (let i = 0; i < buttonCount; i++) {
+                const button = gamepad.buttons[i];
+                if (button && button.pressed) {
+                    buttonStates |= (1 << i); // Set the corresponding bit if the button is pressed
                 }
-            }
-
-            for (let i = 8; i < 16; i++) {
-                if (gamepad.buttons[i].pressed) {
-                    secondByte |= (gamepad.buttons[i].pressed << i - 8);
-                    buttonElements[i].style.background = 'var(--alf-green)';
-                } else {
-                    buttonElements[i].style.background = 'grey';
+    
+                // Update button visuals if DOM element exists
+                if (buttonElements[i]) {
+                    const newColor = button && button.pressed ? 'var(--alf-green)' : 'grey';
+                    if (buttonElements[i].style.background !== newColor) {
+                        buttonElements[i].style.background = newColor;
+                    }
                 }
             }
         }
-
-        return { byte0: firstByte, byte1: secondByte }
+    
+        // Separate the 16-bit integer into two bytes
+        const firstByte = buttonStates & 0xFF;        // Lower 8 bits
+        const secondByte = (buttonStates >> 8) & 0xFF; // Upper 8 bits
+    
+        return { byte0: firstByte, byte1: secondByte };
     }
 
     return {
