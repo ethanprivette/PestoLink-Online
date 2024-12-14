@@ -158,9 +158,16 @@ function renderLoop() {
         }
     }
 
-    if (!document.hasFocus()) { rawPacket.fill(0, 0, 20); }
+    if (!document.hasFocus()) { 
+        rawPacket.fill(0, 0, 20);
+        rawPacket[0] = 1;
+        rawPacket[1] = 127;
+        rawPacket[2] = 127;
+        rawPacket[3] = 127;
+        rawPacket[4] = 127;
+    }
 
-    //console.log(rawPacket)
+    console.log(rawPacket)
     bleAgent.attemptSend(rawPacket);
 }
 
