@@ -515,6 +515,8 @@ function createGamepadAgent() {
     function getGamepadAxes() {
         let gamepad = getSelectedGamepad();
         if (gamepad) {
+            console.log(gamepad);
+            console.log(gamepad.axes);
             for (let i = 0; i < 4; i++) {
                 let axisValGamepad = convertUnitFloatToByte(gamepad.axes[i])
                 axisValueElements[i].textContent = axisValGamepad
