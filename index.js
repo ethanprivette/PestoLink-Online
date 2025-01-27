@@ -493,12 +493,17 @@ function createMobileButtonAgent() {
 
 function createGamepadAgent() {
 
-    function getGamepads() {
-        return Array.from(navigator.getGamepads()).filter(gamepad => gamepad);
-    }
-
     function getSelectedGamepad() {
-        return getGamepads().find(gamepad => gamepad.index == 0);
+        let rawGamepads = navigator.getGamepads();
+        let gamepadsArray = Array.from(rawGamepads).filter(gamepad => gamepad);
+
+        console.log(" ");
+        console.log("raw gamepads from webAPI:");
+        console.log(rawGamepads);
+        console.log("filtered gamepad list:");
+        console.log(gamepadsArray);
+
+        return gamepadsArray.find(gamepad => gamepad.index == 0);
     }
 
     var axisValueElements = document.querySelectorAll('[id^="axisValue"]');
@@ -516,7 +521,7 @@ function createGamepadAgent() {
         let gamepad = getSelectedGamepad();
         if (gamepad) {
             console.log(gamepad);
-            console.log(gamepad.axes);
+            //console.log(gamepad.axes);
             for (let i = 0; i < 4; i++) {
                 let axisValGamepad = convertUnitFloatToByte(gamepad.axes[i])
                 axisValueElements[i].textContent = axisValGamepad
