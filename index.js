@@ -537,7 +537,7 @@ function createGamepadAgent() {
     }
 
     function getButtonBytes() {
-        const gamepad = getSelectedGamepad();
+        const gamepad = getFirstGamepad();
         let buttonStates = 0; // Single integer to hold all 16 button states
     
         if (gamepad) {
