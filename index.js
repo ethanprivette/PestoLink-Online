@@ -205,9 +205,13 @@ function createBleAgent() {
     async function updateBLE() {
         if (bleUpdateInProgress) return
         bleUpdateInProgress = true;
-        if (!isConnectedBLE) connectBLE();
-        else disconnectBLE();
-        bleUpdateInProgress = false;
+        try {
+            if (!isConnectedBLE) await connectBLE();
+            else await disconnectBLE();
+        } finally {
+            bleUpdateInProgress = false;
+        }
+        
     }
 
     async function connectBLE() {
@@ -281,7 +285,7 @@ function createBleAgent() {
     }
 
     async function disconnectBLE() {
-        displayBleStatus('Disconnecting');
+        displayBleStatus('Disconnecting', 'gray');
         try {
             batteryWatchdogStop();
             await device.removeEventListener('gattserverdisconnected', robotDisconnect);
@@ -322,8 +326,8 @@ function createBleAgent() {
         displayBleStatus('Connected', '#4dae50'); //green
         if (timer) {clearTimeout(timer);}
         timer = setTimeout(() => {
-            displayBleStatus('timeout?', 'black');
-        }, timeout);
+                displayBleStatus('timeout?', 'black');
+            }, timeout);
     }
     // Function to stop the watchdog timer
     function batteryWatchdogStop() {
