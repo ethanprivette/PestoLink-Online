@@ -14,12 +14,12 @@ let desktopElements = document.getElementsByClassName("desktop-only");
 
 let helpRow = document.getElementsByClassName("help-row");
 
-let infoElement = document.getElementById("info-container");
+let terminalElement = document.getElementById("terminal-container");
 let hackSpacerElement = document.getElementById("hack-spacer");
 
 let toggleMobile = document.getElementById('toggle-mobile-layout');
 let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
-let toggleInfo = document.getElementById('toggle-info');
+let toggleTerminal = document.getElementById('toggle-terminal');
 
 // --------------------------- state management ------------------------------------ //
 
@@ -37,15 +37,15 @@ if (localStorage.getItem(toggleMobile.id) == null) {
 document.addEventListener('DOMContentLoaded', function () {
     updateMobileSlider(toggleMobile, toggleState=false);
     updateSlider(toggleKeyboardWASD, toggleState=false);
-    updateInfoSlider(toggleInfo, toggleState=false);
+    updateTerminalSlider(toggleTerminal, toggleState=false);
 
     toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
     toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleInfo.onmousedown =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
+    toggleTerminal.onmousedown =     updateTerminalSlider.bind(null, toggleTerminal, toggleState=true)
     
     toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
     toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleInfo.ontouchstart =     updateInfoSlider.bind(null, toggleInfo, toggleState=true)
+    toggleTerminal.ontouchstart =     updateTerminalSlider.bind(null, toggleTerminal, toggleState=true)
     
     window.setInterval(renderLoop, 100); // call renderLoop every num milliseconds
 });
@@ -66,14 +66,14 @@ function updateMobileSlider(sliderElement, toggleState){
     }
 }
 
-function updateInfoSlider(sliderElement, toggleState){
+function updateTerminalSlider(sliderElement, toggleState){
     updateSlider(sliderElement, toggleState);
 
-    if (localStorage.getItem(toggleInfo.id) === 'true') {
-        infoElement.style.display = "grid";
+    if (localStorage.getItem(toggleTerminal.id) === 'true') {
+        terminalElement.style.display = "grid";
         hackSpacerElement.style.display = "none";
     } else {
-        infoElement.style.display = "none";
+        terminalElement.style.display = "none";
         hackSpacerElement.style.display = "grid";
     }
 }
@@ -177,15 +177,24 @@ function createBleAgent() {
     let buttonBLE = document.getElementById('ble-button')
     let statusBLE = document.getElementById('ble-status')
     let telemetryDisplay = document.getElementById('telemetry')
+    let terminalLog = document.getElementById("terminal-log");
+    let terminalClearButton = document.getElementById("terminal-clear-button");
+    let terminalLockButton = document.getElementById("terminal-lock-button");
+
 
     const SERVICE_UUID_PESTOBLE = '27df26c5-83f4-4964-bae0-d7b7cb0a1f54';
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
     const CHARACTERISTIC_UUID_TELEMETRY = '266d9d74-3e10-4fcd-88d2-cb63b5324d0c';
+    const CHARACTERISTIC_UUID_TERMINAL = '433ec275-a494-40ab-98c2-4785a19bf830';
 
     if (isMobile){
         buttonBLE.ontouchend = updateBLE;
+        terminalClearButton.ontouchend = clearTerminal;
+        terminalLockButton.ontouchend = toggleTerminalLock;
     } else {
         buttonBLE.onclick = updateBLE;
+        terminalClearButton.onclick = clearTerminal;
+        terminalLockButton.onclick = toggleTerminalLock;
     }
 
     function displayBleStatus(status, color) {
@@ -199,6 +208,8 @@ function createBleAgent() {
     let service;
     let characteristic_gamepad;
     let characteristic_telemetry;
+    let characteristic_terminal;
+
     let isConnectedBLE = false;
     let bleUpdateInProgress = false;
 
@@ -227,13 +238,25 @@ function createBleAgent() {
             server = await device.gatt.connect();
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
             
+
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
-            try{
+
+            // Try to get and subscribe to telemetry
+            try {
                 characteristic_telemetry = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
-                await characteristic_telemetry.startNotifications()
-                await characteristic_telemetry.addEventListener('characteristicvaluechanged', handleTelemetryCharacteristic);
-            }catch{
-                console.log("Pestolink version on robot is real old :(")
+                await characteristic_telemetry.startNotifications();
+                characteristic_telemetry.addEventListener('characteristicvaluechanged', handleTelemetryCharacteristic);
+            } catch {
+                console.log("Telemetry characteristic not available.");
+            }
+    
+            // Try to get and subscribe to terminal
+            try {
+                characteristic_terminal = await service.getCharacteristic(CHARACTERISTIC_UUID_TERMINAL);
+                await characteristic_terminal.startNotifications();
+                characteristic_terminal.addEventListener('characteristicvaluechanged', handleTerminalCharacteristic);
+            } catch {
+                console.log("Terminal characteristic not available.");
             }
 
             await device.addEventListener('gattserverdisconnected', robotDisconnect);
@@ -282,6 +305,57 @@ function createBleAgent() {
 
 
         //batteryDisplay.innerHTML = "&#x1F50B;&#xFE0E; " + voltage.toFixed(1) + "V";
+    }
+
+    let terminalLocked = false;
+
+    function handleTerminalCharacteristic(event){
+
+        if(terminalLocked) return;
+
+        const value = event.target.value; // DataView of the characteristic's value
+
+        let controlCharacter = value.getUint8(0);
+        let asciiString = '';
+
+        for (let i = 0; i < Math.min(64, value.byteLength-1); i++) {
+            asciiString += String.fromCharCode(value.getUint8(i+1));
+        }
+
+        if (controlCharacter == 1) {
+            // Get current lines
+            const lines = terminalLog.innerHTML.split('<br>').filter(line => line !== '');
+
+            // Add new line
+            lines.push(asciiString);
+
+            // Keep only the last 7 lines
+            while (lines.length > 7) {
+                lines.shift(); // Remove the oldest line
+            }
+
+            // Re-render terminal
+            terminalLog.innerHTML = lines.join('<br>');
+        }
+
+        if(controlCharacter == 2){
+            terminalLog.innerHTML = "";
+        }
+
+    }
+
+    function clearTerminal() {
+        terminalLog.innerHTML = "";
+    }
+    
+    function toggleTerminalLock() {
+        if(terminalLocked){
+            terminalLocked = false;
+            terminalLockButton.innerHTML = "🔓";
+        } else{
+            terminalLocked = true;
+            terminalLockButton.innerHTML = "🔒";
+        }
     }
 
     async function disconnectBLE() {

@@ -3,6 +3,8 @@
 
 *v1.0.0*
 
+Special thanks to @benPark20 for console code!
+
 ## Embedded Platform Support
 
 [PestoLink](https://github.com/AlfredoSystems/PestoLink-MicroPython) currently supports two embedded platforms: **MicroPython** and **Arduino**.
@@ -19,7 +21,7 @@ Platform-specific libraries:
 
 ## Browser Support
 
-PestoLink works with **Google Chrome** on the following platforms:
+PestoLink is only designed for certain web browsers. PestoLink works with **Google Chrome** on the following platforms:
 
 - Windows
 - Android

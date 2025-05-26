@@ -52,19 +52,22 @@
                     <div id="toggle-mobile-layout" class="toggle-round"><div class="toggle-nub"></div></div>
                 </div>
 
-                <div class="settings-label help-row">Override axes/buttons <br> with keyboard</div>
+                <div class="settings-label help-row">Override axes/buttons</div>
 
                 <div class="settings-toggle help-row">
                     <div id="toggle-keyboard-style" class="toggle-round"><div class="toggle-nub"></div></div>
                 </div>
 
-                <div class="settings-label help-row">Help/Info!</div>
+                <div class="settings-label help-row">Terminal</div>
 
                 <div class="settings-toggle help-row">
-                    <div id="toggle-info" class="toggle-round"><div class="toggle-nub"></div></div>
+                    <div id="toggle-terminal" class="toggle-round"><div class="toggle-nub"></div></div>
                 </div>
 
             </div>
+
+            <a href="https://github.com/AlfredoSystems/PestoLink-Online" target="_blank" id="github-link">Help and Info 🛈</a>
+
         </div>
 
         <div class="container mobile-only" id="mobile-button">
@@ -99,25 +102,10 @@
         </div>
     </div>
 
-    <div id="info-container">
-        <p>
-            <u>Embedded Platform Support</u>
-            <br> <a href="https://github.com/AlfredoSystems/PestoLink-MicroPython">PestoLink</a> currently supports two embedded platforms, MicroPython and Arduino
-            (designed for <a href="https://www.sparkfun.com/products/22230">RP2040 on XRP Kits</a> and <a href="https://www.alfredosys.com/products/alfredo-nou2/">ESP32</a> respectively).
-            <br> MicroPython based robots use the module <a href="https://github.com/AlfredoSystems/PestoLink-MicroPython/tree/main">PestoLink-MicroPython</a>.
-            ,Arduino based robots use the library <a href="https://github.com/AlfredoSystems/PestoLink-Receive">PestoLink-Receive</a>.
-
-            <br><br> <u>Browser Support</u>
-            <br> PestoLink works with Google Chrome on Windows, Android, Mac, Linux, and ChromeOS.
-            <br>On iOS very few web browsers support webBluetooth. Google Chrome has worked for some people, but <a href="https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055">Bluefy</a> is the best option found so far.
-
-            <br><br> <u>What does "Override axes/buttons with keyboard" do?</u>
-            <br> By default, keyboard data is sent seperatly from axis/button data. If your robot was programmed to be driven with gamepad/mobile data, but you need to drive the bot and
-            dont have a gamepad or phone on hand, you can enable this switch to override the axis/button data with keyboard input. 'WASD' wil override Axis 0 and 1, 'IJKL' will override Axis 2 and 3.
-            'ZXCVBNM,' will overide buttons 0 through 7.
-
-            <br><br> If you have any questions, feel free to reach out! (alfredopurchases@gmail.com)
-        </p>
+    <div id="terminal-container">
+        <button id="terminal-clear-button">🧹</button>
+        <button id="terminal-lock-button">🔓</button>
+        <div id="terminal-log"></div>
     </div>
 
     <div id="hack-spacer"></div>
