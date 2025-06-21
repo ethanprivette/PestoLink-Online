@@ -10,7 +10,7 @@ Special thanks to @benPark20 for console code!
 [PestoLink](https://github.com/AlfredoSystems/PestoLink-MicroPython) currently supports two embedded platforms: **MicroPython** and **Arduino**.
 
 - MicroPython support is designed for the [RP2040 on XRP Kits](https://www.sparkfun.com/products/22230).
-- Arduino support is designed for the [ESP32](https://www.alfredosys.com/products/alfredo-nou2/).
+- Arduino support is designed for the ESP32, for example with the [NoU2](https://alfredo-nou2.readthedocs.io/en/latest/robot_programming_tutorial_Pesto_Link.html) and the [NoU3](https://alfredo-nou3.readthedocs.io/robot_programming_tutorial_Pesto_Link.html).
 
 Platform-specific libraries:
 
