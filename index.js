@@ -22,13 +22,24 @@ let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
 let toggleInfo = document.getElementById('toggle-info');
 
 let autoIntructions = [];
-let lastPressed = null;
+let autoEvents = [];
+
 let currentInstruction = null;
+let currentEvent = null;
+
+let flywheelSpinup = null;
+let shooterTimeout = null;
+
+let lastPressed = null;
 let currentTime = Date.now();
 let startTime = 0;
 let timestamp = 0;
 let hPressed = false;
 let redAlliance = false;
+
+let subwooferShootButton = null;
+let intakeButton = null;
+let indexButton = null;
 
 // --------------------------- state management ------------------------------------ //
 
@@ -190,31 +201,76 @@ function renderLoop() {
         for (let instruction of autoIntructions) {
             if (instruction.start <= timestamp && instruction.end > timestamp) {
                 currentInstruction = instruction;
+                break;
+            } else {
+                currentInstruction = null;
             }
         }
 
-        if (currentInstruction.type == "Drive Time") {
-            rawPacket[2] = clampUint8(rawPacket[2] - 128)
-            console.log(rawPacket[2]);
-        } else if (currentInstruction.type == "Turn Time") {
-            if (currentInstruction.direction == "CW") {
-                if (!redAlliance) {
-                    rawPacket[1] = clampUint8(rawPacket[1] + 128);
-                } else {
-                    rawPacket[1] = clampUint8(rawPacket[1] - 128);
-                }
-                console.log(rawPacket[1]);
-            } else if (currentInstruction.direction == "CCW") {
-                if (!redAlliance) {
-                    rawPacket[1] = clampUint8(rawPacket[1] - 128);
-                } else {
-                    rawPacket[1] = clampUint8(rawPacket[1] + 128);
-                }
-                console.log(rawPacket[1]);
+        for (let event of autoEvents) {
+            if (event.start <= timestamp && event.end > timestamp) {
+                currentEvent = event;
+                console.log(currentEvent);
+                break;
+            } else {
+                currentEvent = null;
             }
-            // console.log("turning")
-        } else {
-            console.error("erm what the sigma");
+        }
+
+        if (currentInstruction != null) {
+            if (currentInstruction.type == "Drive Time") {
+                rawPacket[2] = clampUint8(rawPacket[2] - 128)
+                console.log("DT", rawPacket[2]);
+            } else if (currentInstruction.type == "Turn Time") {
+                if (currentInstruction.direction == "CW") {
+                    if (!redAlliance) {
+                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
+                    } else {
+                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
+                    }
+                    console.log("CW", rawPacket[1]);
+                } else if (currentInstruction.direction == "CCW") {
+                    if (!redAlliance) {
+                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
+                    } else {
+                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
+                    }
+                    console.log("CCW", rawPacket[1]);
+                }
+                // console.log("turning")
+            } else {
+                console.error("erm what the sigma");
+            }
+        }
+
+        if (currentEvent != null) {
+            if (currentEvent.type == "namedCommand") {
+                if (currentEvent.commandName == "shoot") {
+                    if (subwooferShootButton < 8) {
+                        rawPacket[5] |= (1 << subwooferShootButton);
+                    } else if (subwooferShootButton > 8 && intakeButton < 16) {
+                        rawPacket[6] |= (1 << subwooferShootButton);
+                    }
+
+                    if (timestamp >= currentEvent.end - shooterTimeout) {
+                        if (indexButton < 8) {
+                            rawPacket[5] |= (1 << indexButton);
+                        } else if (indexButton > 8 && indexButton < 16) {
+                            rawPacket[6] |= (1 << indexButton);
+                        }
+                    }
+                } else if (currentEvent.commandName == "intake") {
+                    if (intakeButton < 8) {
+                        rawPacket[5] |= (1 << intakeButton);
+                    } else if (intakeButton > 8 && intakeButton < 16) {
+                        rawPacket[6] |= (1 << intakeButton)
+                    }
+                }
+                // console.log("E", rawPacket[5])
+                // console.log(rawPacket[6])
+            } else {
+                console.error("erm what the sigma, but for events");
+            }
         }
     }
 
@@ -328,7 +384,15 @@ function createBleAgent() {
                     maxAngleSpeed = fileJson.defaultMaxAngVel;
                     maxAngleAccel = fileJson.defaultMaxAngAccel;
 
-                    console.log(maxAngleSpeed);
+                    subwooferShootButton = fileJson.subWooferShoot;
+                    intakeButton = fileJson.intakeButton;
+                    indexButton = fileJson.indexButton;
+                    
+                    flywheelSpinup = fileJson.flywheelSpinup;
+                    shooterTimeout = fileJson.shooterTimeout;
+
+                    console.log(flywheelSpinup);
+                    console.log(shooterTimeout);
 
                     if (settingsConfirmed) {
                         displayPathName('✔, settings overridden', 'green');
@@ -383,10 +447,33 @@ function createBleAgent() {
     async function calculatePathTime() {
         const numWaypoints = loadedPath.waypoints.length;
         const waypoints = loadedPath.waypoints;
+        const eventMarkers = loadedPath.eventMarkers;
         const startAngle = loadedPath.idealStartingState.rotation;
-        const currentAngle = startAngle;
-        let totalTime = 0.0;
+        let currentAngle = 0.0;
+        let pathTime = 0.0;
+        let commandTime = 0.0;
+        let index = 0;
+        let markers = [];
+
         autoIntructions = [];
+
+        for (let i = 0; i < eventMarkers.length; i++) {
+            const position = eventMarkers[i].waypointRelativePos;
+
+            namedCommands = eventMarkers[i].command.data.commands;
+
+            for (let y = 0; y < namedCommands.length; y++) {
+                let commandName = namedCommands[y].data.name;
+
+                markers.push({
+                    type: "namedCommand",
+                    position: position,
+                    start: null,
+                    end: null,
+                    commandName: commandName
+                });
+            }
+        }
 
         for (let i = 1; i < numWaypoints; i++) {
             const start = waypoints[i - 1];
@@ -398,6 +485,21 @@ function createBleAgent() {
             const targetAngle = Math.atan2(dy, dx);
 
             let turnAngle = targetAngle - currentAngle;
+
+            if (i == 1) {
+                currentAngle = startAngle;
+            } else {
+                currentAngle = targetAngle;
+            }
+
+            console.log("ang", targetAngle);
+            console.log("other ang", turnAngle);
+
+            if (i-1 < markers.length) {
+                if (markers[i-1].start == 0 || markers[i-1].commandName == "shoot") {
+                    pathTime += flywheelSpinup;
+                }
+            }
 
             let turnDir;
             if (turnAngle > 0) {
@@ -424,18 +526,20 @@ function createBleAgent() {
             } else {
                 const remainingAngle = absTurnAngle - 2 * angleToMaxSpeed;
                 const constantSpeedTime = remainingAngle / maxAngleSpeed;
-                turnTime = 2 * timeToMaxSpeed + constantSpeedTime;
+                turnTime = 2 * timeToMaxSpeedAngle + constantSpeedTime;
             }
 
-            totalTime += turnTime;
+            pathTime += turnTime;
 
             if (turnDir != "No Turn") {
                 autoIntructions.push({
+                    index: index,
                     type: "Turn Time",
-                    start: totalTime - turnTime,
-                    end: totalTime,
+                    start: pathTime - turnTime,
+                    end: pathTime,
                     direction: turnDir
                 });
+                index++;
             }
 
             const timeToMaxSpeed = maxSpeed / maxAccel;
@@ -450,17 +554,44 @@ function createBleAgent() {
                 segmentTime = 2 * timeToMaxSpeed + constantSpeedTime;
             }
 
-            totalTime += segmentTime;
+            pathTime += segmentTime;
 
-            autoIntructions.push({
-                type: "Drive Time",
-                start: totalTime - segmentTime,
-                end: totalTime
-            });
+            if (segmentTime > 0.05) {
+                autoIntructions.push({
+                    index: index,
+                    type: "Drive Time",
+                    start: pathTime - segmentTime,
+                    end: pathTime
+                });
+                index++;
+            }
         }
-        console.log(totalTime);
+        for (let marker of markers) {
+            if (marker.commandName == "shoot") {
+                if (marker.position == 0) {
+                    autoEvents.push({
+                        type: "namedCommand",
+                        position: marker.position,
+                        start: 0,
+                        end: 0 + flywheelSpinup,
+                        commandName: marker.commandName
+                    });
+                } else {
+                    autoEvents.push({
+                        type: "namedCommand",
+                        position: marker.position,
+                        start: autoIntructions[marker.position].end,
+                        end: autoIntructions[marker.position].end + flywheelSpinup,
+                        commandName: marker.commandName
+                    });
+                }
+            }
+        }
+
+        console.log(pathTime + commandTime);
         console.log(autoIntructions);
-        if (totalTime > 15) {
+        console.log(autoEvents);
+        if (pathTime + commandTime > 15) {
             displayPathName('Will cut at 15 sec', 'orange');
         }
     }
