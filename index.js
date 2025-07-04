@@ -14,12 +14,12 @@ let desktopElements = document.getElementsByClassName("desktop-only");
 
 let helpRow = document.getElementsByClassName("help-row");
 
-let infoElement = document.getElementById("info-container");
+let terminalElement = document.getElementById("terminal-container");
 let hackSpacerElement = document.getElementById("hack-spacer");
 
 let toggleMobile = document.getElementById('toggle-mobile-layout');
 let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
-let toggleInfo = document.getElementById('toggle-info');
+let toggleTerminal = document.getElementById('toggle-terminal');
 
 let autoIntructions = [];
 let autoEvents = [];
@@ -55,18 +55,18 @@ if (localStorage.getItem(toggleMobile.id) == null) {
 if (isMobile) for (let element of helpRow) element.style.display = "none";
 
 document.addEventListener('DOMContentLoaded', function () {
-    updateMobileSlider(toggleMobile, toggleState = false);
-    updateSlider(toggleKeyboardWASD, toggleState = false);
-    updateInfoSlider(toggleInfo, toggleState = false);
+    updateMobileSlider(toggleMobile, toggleState=false);
+    updateSlider(toggleKeyboardWASD, toggleState=false);
+    updateTerminalSlider(toggleTerminal, toggleState=false);
 
-    toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState = true)
-    toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState = true)
-    toggleInfo.onmousedown = updateInfoSlider.bind(null, toggleInfo, toggleState = true)
-
-    toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState = true)
-    toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState = true)
-    toggleInfo.ontouchstart = updateInfoSlider.bind(null, toggleInfo, toggleState = true)
-
+    toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
+    toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
+    toggleTerminal.onmousedown =     updateTerminalSlider.bind(null, toggleTerminal, toggleState=true)
+    
+    toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
+    toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
+    toggleTerminal.ontouchstart =     updateTerminalSlider.bind(null, toggleTerminal, toggleState=true)
+    
     window.setInterval(renderLoop, 100); // call renderLoop every num milliseconds
 });
 
@@ -86,14 +86,14 @@ function updateMobileSlider(sliderElement, toggleState) {
     }
 }
 
-function updateInfoSlider(sliderElement, toggleState) {
+function updateTerminalSlider(sliderElement, toggleState){
     updateSlider(sliderElement, toggleState);
 
-    if (localStorage.getItem(toggleInfo.id) === 'true') {
-        infoElement.style.display = "grid";
+    if (localStorage.getItem(toggleTerminal.id) === 'true') {
+        terminalElement.style.display = "grid";
         hackSpacerElement.style.display = "none";
     } else {
-        infoElement.style.display = "none";
+        terminalElement.style.display = "none";
         hackSpacerElement.style.display = "grid";
     }
 }
@@ -274,7 +274,110 @@ function renderLoop() {
         }
     }
 
-    if (!document.hasFocus()) { rawPacket.fill(0, 0, 20); }
+    for (let key of keyboardArray) {
+        if (key === keyToNum["KeyH"]) {
+            hPressed = true;
+        }
+    }
+
+    if (hPressed) {
+        if (Date.now() > startTime + 15000) {
+            startTime = Date.now();
+        }
+
+        currentTime = Date.now();
+        timestamp = (currentTime - startTime) / 1000;
+
+        if (timestamp >= autoIntructions[autoIntructions.length - 1].end || timestamp >= 15) {
+            hPressed = false;
+        } else {
+            hPressed = true;
+        }
+
+        for (let instruction of autoIntructions) {
+            if (instruction.start <= timestamp && instruction.end > timestamp) {
+                currentInstruction = instruction;
+                break;
+            } else {
+                currentInstruction = null;
+            }
+        }
+
+        for (let event of autoEvents) {
+            if (event.start <= timestamp && event.end > timestamp) {
+                currentEvent = event;
+                console.log(currentEvent);
+                break;
+            } else {
+                currentEvent = null;
+            }
+        }
+
+        if (currentInstruction != null) {
+            if (currentInstruction.type == "Drive Time") {
+                rawPacket[2] = clampUint8(rawPacket[2] - 128)
+                console.log("DT", rawPacket[2]);
+            } else if (currentInstruction.type == "Turn Time") {
+                if (currentInstruction.direction == "CW") {
+                    if (!redAlliance) {
+                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
+                    } else {
+                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
+                    }
+                    console.log("CW", rawPacket[1]);
+                } else if (currentInstruction.direction == "CCW") {
+                    if (!redAlliance) {
+                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
+                    } else {
+                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
+                    }
+                    console.log("CCW", rawPacket[1]);
+                }
+                // console.log("turning")
+            } else {
+                console.error("erm what the sigma");
+            }
+        }
+
+        if (currentEvent != null) {
+            if (currentEvent.type == "namedCommand") {
+                if (currentEvent.commandName == "shoot") {
+                    if (subwooferShootButton < 8) {
+                        rawPacket[5] |= (1 << subwooferShootButton);
+                    } else if (subwooferShootButton > 8 && intakeButton < 16) {
+                        rawPacket[6] |= (1 << subwooferShootButton);
+                    }
+
+                    if (timestamp >= currentEvent.end - shooterTimeout) {
+                        if (indexButton < 8) {
+                            rawPacket[5] |= (1 << indexButton);
+                        } else if (indexButton > 8 && indexButton < 16) {
+                            rawPacket[6] |= (1 << indexButton);
+                        }
+                    }
+                } else if (currentEvent.commandName == "intake") {
+                    if (intakeButton < 8) {
+                        rawPacket[5] |= (1 << intakeButton);
+                    } else if (intakeButton > 8 && intakeButton < 16) {
+                        rawPacket[6] |= (1 << intakeButton)
+                    }
+                }
+                // console.log("E", rawPacket[5])
+                // console.log(rawPacket[6])
+            } else {
+                console.error("erm what the sigma, but for events");
+            }
+        }
+    }
+
+    if (!document.hasFocus()) { 
+        rawPacket.fill(0, 0, 20);
+        rawPacket[0] = 1;
+        rawPacket[1] = 127;
+        rawPacket[2] = 127;
+        rawPacket[3] = 127;
+        rawPacket[4] = 127;
+    }
 
     // console.log(rawPacket)
     bleAgent.attemptSend(rawPacket);
@@ -286,19 +389,28 @@ function createBleAgent() {
     let buttonBLE = document.getElementById('ble-button')
     let statusBLE = document.getElementById('ble-status')
     let telemetryDisplay = document.getElementById('telemetry')
+    let terminalLog = document.getElementById("terminal-log");
+    let terminalClearButton = document.getElementById("terminal-clear-button");
+    let terminalLockButton = document.getElementById("terminal-lock-button");
+
     let pathDisplay = document.getElementById('path-selector')
     let allianceSelector = document.getElementById('alliance-selector')
 
     const SERVICE_UUID_PESTOBLE = '27df26c5-83f4-4964-bae0-d7b7cb0a1f54';
     const CHARACTERISTIC_UUID_GAMEPAD = '452af57e-ad27-422c-88ae-76805ea641a9';
     const CHARACTERISTIC_UUID_TELEMETRY = '266d9d74-3e10-4fcd-88d2-cb63b5324d0c';
+    const CHARACTERISTIC_UUID_TERMINAL = '433ec275-a494-40ab-98c2-4785a19bf830';
 
     if (isMobile) {
         buttonBLE.ontouchend = updateBLE;
+        terminalClearButton.ontouchend = clearTerminal;
+        terminalLockButton.ontouchend = toggleTerminalLock;
         pathDisplay.ontouchend = updatePath;
         allianceSelector.ontouchend = updateAlliance;
     } else {
         buttonBLE.onclick = updateBLE;
+        terminalClearButton.onclick = clearTerminal;
+        terminalLockButton.onclick = toggleTerminalLock;
         pathDisplay.onclick = updatePath;
         allianceSelector.onclick = updateAlliance;
     }
@@ -323,7 +435,9 @@ function createBleAgent() {
     let server;
     let service;
     let characteristic_gamepad;
-    let characteristic_battery;
+    let characteristic_telemetry;
+    let characteristic_terminal;
+
     let loadedPath;
     let isConnectedBLE = false;
     let bleUpdateInProgress = false;
@@ -603,26 +717,37 @@ function createBleAgent() {
                 displayBleStatus('Connecting', 'black');
                 device = await navigator.bluetooth.requestDevice({ filters: [{ services: [SERVICE_UUID_PESTOBLE] }] });
             } else {
-                displayBleStatus('Attempting Reconnect...', 'black');
+                displayBleStatus(`Reconnecting to <br> ${device.name}`, 'black');
             }
 
             server = await device.gatt.connect();
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
-
+            
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
+
+            // Try to get and subscribe to telemetry
             try {
-                characteristic_battery = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
-                await characteristic_battery.startNotifications()
-                await characteristic_battery.addEventListener('characteristicvaluechanged', handleBatteryCharacteristic);
+                characteristic_telemetry = await service.getCharacteristic(CHARACTERISTIC_UUID_TELEMETRY);
+                await characteristic_telemetry.startNotifications();
+                characteristic_telemetry.addEventListener('characteristicvaluechanged', handleTelemetryCharacteristic);
             } catch {
-                console.log("Pestolink version on robot is real old :(")
+                console.log("Telemetry characteristic not available.");
+            }
+    
+            // Try to get and subscribe to terminal
+            try {
+                characteristic_terminal = await service.getCharacteristic(CHARACTERISTIC_UUID_TERMINAL);
+                await characteristic_terminal.startNotifications();
+                characteristic_terminal.addEventListener('characteristicvaluechanged', handleTerminalCharacteristic);
+            } catch {
+                console.log("Terminal characteristic not available.");
             }
 
             await device.addEventListener('gattserverdisconnected', robotDisconnect);
 
             isConnectedBLE = true;
             buttonBLE.innerHTML = '❌';
-            displayBleStatus('Connected', '#4dae50'); //green
+            displayBleStatus(`Connected to <br> ${device.name}`, '#4dae50'); //green
 
         } catch (error) {
             if (error.name === 'NotFoundError') {
@@ -637,7 +762,7 @@ function createBleAgent() {
         }
     }
 
-    function handleBatteryCharacteristic(event) {
+    function handleTelemetryCharacteristic(event){
         batteryWatchdogReset();
 
         const value = event.target.value; // DataView of the characteristic's value
@@ -666,8 +791,59 @@ function createBleAgent() {
         //batteryDisplay.innerHTML = "&#x1F50B;&#xFE0E; " + voltage.toFixed(1) + "V";
     }
 
+    let terminalLocked = false;
+
+    function handleTerminalCharacteristic(event){
+
+        if(terminalLocked) return;
+
+        const value = event.target.value; // DataView of the characteristic's value
+
+        let controlCharacter = value.getUint8(0);
+        let asciiString = '';
+
+        for (let i = 0; i < Math.min(64, value.byteLength-1); i++) {
+            asciiString += String.fromCharCode(value.getUint8(i+1));
+        }
+
+        if (controlCharacter == 1) {
+            // Get current lines
+            const lines = terminalLog.innerHTML.split('<br>').filter(line => line !== '');
+
+            // Add new line
+            lines.push(asciiString);
+
+            // Keep only the last 7 lines
+            while (lines.length > 7) {
+                lines.shift(); // Remove the oldest line
+            }
+
+            // Re-render terminal
+            terminalLog.innerHTML = lines.join('<br>');
+        }
+
+        if(controlCharacter == 2){
+            terminalLog.innerHTML = "";
+        }
+
+    }
+
+    function clearTerminal() {
+        terminalLog.innerHTML = "";
+    }
+    
+    function toggleTerminalLock() {
+        if(terminalLocked){
+            terminalLocked = false;
+            terminalLockButton.innerHTML = "🔓";
+        } else{
+            terminalLocked = true;
+            terminalLockButton.innerHTML = "🔒";
+        }
+    }
+
     async function disconnectBLE() {
-        displayBleStatus('Disconnecting');
+        displayBleStatus('Disconnecting', 'gray');
         try {
             batteryWatchdogStop();
             await device.removeEventListener('gattserverdisconnected', robotDisconnect);
@@ -701,7 +877,6 @@ function createBleAgent() {
         }
     }
 
-    // Function to create and manage the watchdog timer
     let timer;
     const timeout = 1000; // 400ms
     // Function to start or reset the watchdog timer
@@ -709,8 +884,8 @@ function createBleAgent() {
         displayBleStatus('Connected', '#4dae50'); //green
         if (timer) { clearTimeout(timer); }
         timer = setTimeout(() => {
-            displayBleStatus('timeout?', 'black');
-        }, timeout);
+                displayBleStatus('timeout?', 'black');
+            }, timeout);
     }
     // Function to stop the watchdog timer
     function batteryWatchdogStop() {
@@ -722,8 +897,6 @@ function createBleAgent() {
         attemptSend: sendPacketBLE
     };
 }
-
-
 
 // -------------------------------------------- mobile --------------------------------------- //
 
@@ -882,12 +1055,17 @@ function createMobileButtonAgent() {
 
 function createGamepadAgent() {
 
-    function getGamepads() {
-        return Array.from(navigator.getGamepads()).filter(gamepad => gamepad);
-    }
+    function getFirstGamepad() {
+        let rawGamepads = navigator.getGamepads();
+        let gamepadsArray = Array.from(rawGamepads).filter(gamepad => gamepad);
 
-    function getSelectedGamepad() {
-        return getGamepads().find(gamepad => gamepad.index == 0);
+        //console.log(" ");
+        //console.log("raw gamepads from webAPI:");
+        //console.log(rawGamepads);
+        //console.log("filtered gamepad list:");
+        //console.log(gamepadsArray);
+
+        return gamepadsArray.find(gamepad => gamepad.index == 0);
     }
 
     var axisValueElements = document.querySelectorAll('[id^="axisValue"]');
@@ -902,8 +1080,10 @@ function createGamepadAgent() {
 
     let axisArray = []
     function getGamepadAxes() {
-        let gamepad = getSelectedGamepad();
+        let gamepad = getFirstGamepad();
         if (gamepad) {
+            //console.log(gamepad);
+            //console.log(gamepad.axes);
             for (let i = 0; i < 4; i++) {
                 let axisValGamepad = convertUnitFloatToByte(gamepad.axes[i])
                 axisValueElements[i].textContent = axisValGamepad
@@ -919,30 +1099,33 @@ function createGamepadAgent() {
     }
 
     function getButtonBytes() {
-        let gamepad = getSelectedGamepad();
+        const gamepad = getFirstGamepad();
+        let buttonStates = 0; // Single integer to hold all 16 button states
+    
         if (gamepad) {
-            var firstByte = 0;
-            var secondByte = 0;
-            for (let i = 0; i < 8; i++) {
-                if (gamepad.buttons[i].pressed) {
-                    firstByte |= (gamepad.buttons[i].pressed << i);
-                    buttonElements[i].style.background = 'var(--alf-green)';
-                } else {
-                    buttonElements[i].style.background = 'grey';
+            const buttonCount = Math.min(gamepad.buttons.length, 16); // Limit to 16 buttons
+    
+            for (let i = 0; i < buttonCount; i++) {
+                const button = gamepad.buttons[i];
+                if (button && button.pressed) {
+                    buttonStates |= (1 << i); // Set the corresponding bit if the button is pressed
                 }
-            }
-
-            for (let i = 8; i < 16; i++) {
-                if (gamepad.buttons[i].pressed) {
-                    secondByte |= (gamepad.buttons[i].pressed << i - 8);
-                    buttonElements[i].style.background = 'var(--alf-green)';
-                } else {
-                    buttonElements[i].style.background = 'grey';
+    
+                // Update button visuals if DOM element exists
+                if (buttonElements[i]) {
+                    const newColor = button && button.pressed ? 'var(--alf-green)' : 'grey';
+                    if (buttonElements[i].style.background !== newColor) {
+                        buttonElements[i].style.background = newColor;
+                    }
                 }
             }
         }
-
-        return { byte0: firstByte, byte1: secondByte }
+    
+        // Separate the 16-bit integer into two bytes
+        const firstByte = buttonStates & 0xFF;        // Lower 8 bits
+        const secondByte = (buttonStates >> 8) & 0xFF; // Upper 8 bits
+    
+        return { byte0: firstByte, byte1: secondByte };
     }
 
     return {
