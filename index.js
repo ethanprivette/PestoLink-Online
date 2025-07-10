@@ -21,21 +21,37 @@ let toggleMobile = document.getElementById('toggle-mobile-layout');
 let toggleKeyboardWASD = document.getElementById('toggle-keyboard-style');
 let toggleTerminal = document.getElementById('toggle-terminal');
 
-let autoIntructions = [];
 let autoEvents = [];
 
-let currentInstruction = null;
 let currentEvent = null;
 
 let flywheelSpinup = null;
 let shooterTimeout = null;
 
+let currentTime;
 let lastPressed = null;
-let currentTime = Date.now();
 let startTime = 0;
 let timestamp = 0;
 let hPressed = false;
 let redAlliance = false;
+let autotime = false;
+let loadedPath;
+
+let robotPosition;
+
+let linearKP;
+let linearKI;
+let linearKD;
+let linearPrevError;
+let linearIntegral;
+let linearLastTime
+
+let rotationKP;
+let rotationKI;
+let rotationKD;
+let rotationPrevError;
+let rotationIntegral;
+let rotationLastTime
 
 let subwooferShootButton = null;
 let intakeButton = null;
@@ -55,18 +71,18 @@ if (localStorage.getItem(toggleMobile.id) == null) {
 if (isMobile) for (let element of helpRow) element.style.display = "none";
 
 document.addEventListener('DOMContentLoaded', function () {
-    updateMobileSlider(toggleMobile, toggleState=false);
-    updateSlider(toggleKeyboardWASD, toggleState=false);
-    updateTerminalSlider(toggleTerminal, toggleState=false);
+    updateMobileSlider(toggleMobile, toggleState = false);
+    updateSlider(toggleKeyboardWASD, toggleState = false);
+    updateTerminalSlider(toggleTerminal, toggleState = false);
 
-    toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
-    toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleTerminal.onmousedown =     updateTerminalSlider.bind(null, toggleTerminal, toggleState=true)
-    
-    toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState=true)
-    toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState=true)
-    toggleTerminal.ontouchstart =     updateTerminalSlider.bind(null, toggleTerminal, toggleState=true)
-    
+    toggleMobile.onmousedown = updateMobileSlider.bind(null, toggleMobile, toggleState = true)
+    toggleKeyboardWASD.onmousedown = updateSlider.bind(null, toggleKeyboardWASD, toggleState = true)
+    toggleTerminal.onmousedown = updateTerminalSlider.bind(null, toggleTerminal, toggleState = true)
+
+    toggleMobile.ontouchstart = updateMobileSlider.bind(null, toggleMobile, toggleState = true)
+    toggleKeyboardWASD.ontouchstart = updateSlider.bind(null, toggleKeyboardWASD, toggleState = true)
+    toggleTerminal.ontouchstart = updateTerminalSlider.bind(null, toggleTerminal, toggleState = true)
+
     window.setInterval(renderLoop, 100); // call renderLoop every num milliseconds
 });
 
@@ -86,7 +102,7 @@ function updateMobileSlider(sliderElement, toggleState) {
     }
 }
 
-function updateTerminalSlider(sliderElement, toggleState){
+function updateTerminalSlider(sliderElement, toggleState) {
     updateSlider(sliderElement, toggleState);
 
     if (localStorage.getItem(toggleTerminal.id) === 'true') {
@@ -192,185 +208,70 @@ function renderLoop() {
         currentTime = Date.now();
         timestamp = (currentTime - startTime) / 1000;
 
-        if (timestamp >= autoIntructions[autoIntructions.length - 1].end || timestamp >= 15) {
+        if (timestamp >= 15) {
             hPressed = false;
         } else {
             hPressed = true;
         }
 
-        for (let instruction of autoIntructions) {
-            if (instruction.start <= timestamp && instruction.end > timestamp) {
-                currentInstruction = instruction;
-                break;
-            } else {
-                currentInstruction = null;
-            }
-        }
+        let currentIndex = 0;
 
-        for (let event of autoEvents) {
-            if (event.start <= timestamp && event.end > timestamp) {
-                currentEvent = event;
-                console.log(currentEvent);
-                break;
-            } else {
-                currentEvent = null;
-            }
-        }
+        let { desiredThrottle, desiredRot, nextIndex } = getControlFromWaypoints(currentIndex);
 
-        if (currentInstruction != null) {
-            if (currentInstruction.type == "Drive Time") {
-                rawPacket[2] = clampUint8(rawPacket[2] - 128)
-                console.log("DT", rawPacket[2]);
-            } else if (currentInstruction.type == "Turn Time") {
-                if (currentInstruction.direction == "CW") {
-                    if (!redAlliance) {
-                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
-                    } else {
-                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
-                    }
-                    console.log("CW", rawPacket[1]);
-                } else if (currentInstruction.direction == "CCW") {
-                    if (!redAlliance) {
-                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
-                    } else {
-                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
-                    }
-                    console.log("CCW", rawPacket[1]);
-                }
-                // console.log("turning")
-            } else {
-                console.error("erm what the sigma");
-            }
-        }
+        currentIndex = nextIndex;
 
-        if (currentEvent != null) {
-            if (currentEvent.type == "namedCommand") {
-                if (currentEvent.commandName == "shoot") {
-                    if (subwooferShootButton < 8) {
-                        rawPacket[5] |= (1 << subwooferShootButton);
-                    } else if (subwooferShootButton > 8 && intakeButton < 16) {
-                        rawPacket[6] |= (1 << subwooferShootButton);
-                    }
+        console.log("Desired: " + desiredThrottle + " " + desiredRot + " " + currentIndex);
 
-                    if (timestamp >= currentEvent.end - shooterTimeout) {
-                        if (indexButton < 8) {
-                            rawPacket[5] |= (1 << indexButton);
-                        } else if (indexButton > 8 && indexButton < 16) {
-                            rawPacket[6] |= (1 << indexButton);
-                        }
-                    }
-                } else if (currentEvent.commandName == "intake") {
-                    if (intakeButton < 8) {
-                        rawPacket[5] |= (1 << intakeButton);
-                    } else if (intakeButton > 8 && intakeButton < 16) {
-                        rawPacket[6] |= (1 << intakeButton)
-                    }
-                }
-                // console.log("E", rawPacket[5])
-                // console.log(rawPacket[6])
-            } else {
-                console.error("erm what the sigma, but for events");
-            }
-        }
+        let throttleOutput = calculateLinearPID(desiredThrottle, clamp((128 - rawPacket[2]) / 127, -1, 1));
+        let rotationOutput = calculateRotationPID(desiredRot, robotRot);
+
+        // console.log(robotX + " " + robotY + " " + robotRot);
+
+        // console.log("Throttle: ", + throttleOutput);
+        // console.log("Rotation: ", + rotationOutput);
+
+        // for (let event of autoEvents) {
+        //     if (event.start <= timestamp && event.end > timestamp) {
+        //         currentEvent = event;
+        //         console.log(currentEvent);
+        //         break;
+        //     } else {
+        //         currentEvent = null;
+        //     }
+        // }
+
+        // if (currentEvent != null) {
+        //     if (currentEvent.type == "namedCommand") {
+        //         if (currentEvent.commandName == "shoot") {
+        //             if (subwooferShootButton < 8) {
+        //                 rawPacket[5] |= (1 << subwooferShootButton);
+        //             } else if (subwooferShootButton > 8 && intakeButton < 16) {
+        //                 rawPacket[6] |= (1 << subwooferShootButton);
+        //             }
+
+        //             if (timestamp >= currentEvent.end - shooterTimeout) {
+        //                 if (indexButton < 8) {
+        //                     rawPacket[5] |= (1 << indexButton);
+        //                 } else if (indexButton > 8 && indexButton < 16) {
+        //                     rawPacket[6] |= (1 << indexButton);
+        //                 }
+        //             }
+        //         } else if (currentEvent.commandName == "intake") {
+        //             if (intakeButton < 8) {
+        //                 rawPacket[5] |= (1 << intakeButton);
+        //             } else if (intakeButton > 8 && intakeButton < 16) {
+        //                 rawPacket[6] |= (1 << intakeButton)
+        //             }
+        //         }
+        //         // console.log("E", rawPacket[5])
+        //         // console.log(rawPacket[6])
+        //     } else {
+        //         console.error("erm what the sigma, but for events");
+        //     }
+        // }
     }
 
-    for (let key of keyboardArray) {
-        if (key === keyToNum["KeyH"]) {
-            hPressed = true;
-        }
-    }
-
-    if (hPressed) {
-        if (Date.now() > startTime + 15000) {
-            startTime = Date.now();
-        }
-
-        currentTime = Date.now();
-        timestamp = (currentTime - startTime) / 1000;
-
-        if (timestamp >= autoIntructions[autoIntructions.length - 1].end || timestamp >= 15) {
-            hPressed = false;
-        } else {
-            hPressed = true;
-        }
-
-        for (let instruction of autoIntructions) {
-            if (instruction.start <= timestamp && instruction.end > timestamp) {
-                currentInstruction = instruction;
-                break;
-            } else {
-                currentInstruction = null;
-            }
-        }
-
-        for (let event of autoEvents) {
-            if (event.start <= timestamp && event.end > timestamp) {
-                currentEvent = event;
-                console.log(currentEvent);
-                break;
-            } else {
-                currentEvent = null;
-            }
-        }
-
-        if (currentInstruction != null) {
-            if (currentInstruction.type == "Drive Time") {
-                rawPacket[2] = clampUint8(rawPacket[2] - 128)
-                console.log("DT", rawPacket[2]);
-            } else if (currentInstruction.type == "Turn Time") {
-                if (currentInstruction.direction == "CW") {
-                    if (!redAlliance) {
-                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
-                    } else {
-                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
-                    }
-                    console.log("CW", rawPacket[1]);
-                } else if (currentInstruction.direction == "CCW") {
-                    if (!redAlliance) {
-                        rawPacket[3] = clampUint8(rawPacket[3] - 128);
-                    } else {
-                        rawPacket[3] = clampUint8(rawPacket[3] + 128);
-                    }
-                    console.log("CCW", rawPacket[1]);
-                }
-                // console.log("turning")
-            } else {
-                console.error("erm what the sigma");
-            }
-        }
-
-        if (currentEvent != null) {
-            if (currentEvent.type == "namedCommand") {
-                if (currentEvent.commandName == "shoot") {
-                    if (subwooferShootButton < 8) {
-                        rawPacket[5] |= (1 << subwooferShootButton);
-                    } else if (subwooferShootButton > 8 && intakeButton < 16) {
-                        rawPacket[6] |= (1 << subwooferShootButton);
-                    }
-
-                    if (timestamp >= currentEvent.end - shooterTimeout) {
-                        if (indexButton < 8) {
-                            rawPacket[5] |= (1 << indexButton);
-                        } else if (indexButton > 8 && indexButton < 16) {
-                            rawPacket[6] |= (1 << indexButton);
-                        }
-                    }
-                } else if (currentEvent.commandName == "intake") {
-                    if (intakeButton < 8) {
-                        rawPacket[5] |= (1 << intakeButton);
-                    } else if (intakeButton > 8 && intakeButton < 16) {
-                        rawPacket[6] |= (1 << intakeButton)
-                    }
-                }
-                // console.log("E", rawPacket[5])
-                // console.log(rawPacket[6])
-            } else {
-                console.error("erm what the sigma, but for events");
-            }
-        }
-    }
-
-    if (!document.hasFocus()) { 
+    if (!document.hasFocus()) {
         rawPacket.fill(0, 0, 20);
         rawPacket[0] = 1;
         rawPacket[1] = 127;
@@ -438,7 +339,6 @@ function createBleAgent() {
     let characteristic_telemetry;
     let characteristic_terminal;
 
-    let loadedPath;
     let isConnectedBLE = false;
     let bleUpdateInProgress = false;
     let pathUpdateInProgress = false;
@@ -498,10 +398,22 @@ function createBleAgent() {
                     maxAngleSpeed = fileJson.defaultMaxAngVel;
                     maxAngleAccel = fileJson.defaultMaxAngAccel;
 
+                    encoderTicks = fileJson.encoderTicksPerRev;
+                    wheelRadiusIn = fileJson.wheelRadiusInches;
+                    wheelBaseIn = fileJson.wheelBaseWidthIn;
+
+                    linearKP = fileJson.linearKP;
+                    linearKI = fileJson.linearKI;
+                    linearKD = fileJson.linearKI;
+
+                    rotationKP = fileJson.rotationKP;
+                    rotationKI = fileJson.rotationKI;
+                    rotationKD = fileJson.rotationKD;
+
                     subwooferShootButton = fileJson.subWooferShoot;
                     intakeButton = fileJson.intakeButton;
                     indexButton = fileJson.indexButton;
-                    
+
                     flywheelSpinup = fileJson.flywheelSpinup;
                     shooterTimeout = fileJson.shooterTimeout;
 
@@ -526,8 +438,6 @@ function createBleAgent() {
 
                         console.log(fileJson)
                         // console.log(fileJson.waypoints[0].anchor.x);
-
-                        calculatePathTime();
                     } catch (error) {
                         displayPathName('Invalid JSON', 'red');
                         console.error(error);
@@ -609,8 +519,8 @@ function createBleAgent() {
             console.log("ang", targetAngle);
             console.log("other ang", turnAngle);
 
-            if (i-1 < markers.length) {
-                if (markers[i-1].start == 0 || markers[i-1].commandName == "shoot") {
+            if (i - 1 < markers.length) {
+                if (markers[i - 1].start == 0 || markers[i - 1].commandName == "shoot") {
                     pathTime += flywheelSpinup;
                 }
             }
@@ -722,7 +632,7 @@ function createBleAgent() {
 
             server = await device.gatt.connect();
             service = await server.getPrimaryService(SERVICE_UUID_PESTOBLE);
-            
+
             characteristic_gamepad = await service.getCharacteristic(CHARACTERISTIC_UUID_GAMEPAD);
 
             // Try to get and subscribe to telemetry
@@ -733,7 +643,7 @@ function createBleAgent() {
             } catch {
                 console.log("Telemetry characteristic not available.");
             }
-    
+
             // Try to get and subscribe to terminal
             try {
                 characteristic_terminal = await service.getCharacteristic(CHARACTERISTIC_UUID_TERMINAL);
@@ -762,7 +672,7 @@ function createBleAgent() {
         }
     }
 
-    function handleTelemetryCharacteristic(event){
+    function handleTelemetryCharacteristic(event) {
         batteryWatchdogReset();
 
         const value = event.target.value; // DataView of the characteristic's value
@@ -793,17 +703,22 @@ function createBleAgent() {
 
     let terminalLocked = false;
 
-    function handleTerminalCharacteristic(event){
+    function handleTerminalCharacteristic(event) {
 
-        if(terminalLocked) return;
+        if (terminalLocked) return;
 
         const value = event.target.value; // DataView of the characteristic's value
 
         let controlCharacter = value.getUint8(0);
         let asciiString = '';
 
-        for (let i = 0; i < Math.min(64, value.byteLength-1); i++) {
-            asciiString += String.fromCharCode(value.getUint8(i+1));
+        for (let i = 0; i < Math.min(64, value.byteLength - 1); i++) {
+            asciiString += String.fromCharCode(value.getUint8(i + 1));
+        }
+
+        if (asciiString.substring(0, 2) == "PP") {
+            robotPosition = asciiString.substring(3)
+            console.log(robotPosition)
         }
 
         if (controlCharacter == 1) {
@@ -822,7 +737,7 @@ function createBleAgent() {
             terminalLog.innerHTML = lines.join('<br>');
         }
 
-        if(controlCharacter == 2){
+        if (controlCharacter == 2) {
             terminalLog.innerHTML = "";
         }
 
@@ -831,12 +746,12 @@ function createBleAgent() {
     function clearTerminal() {
         terminalLog.innerHTML = "";
     }
-    
+
     function toggleTerminalLock() {
-        if(terminalLocked){
+        if (terminalLocked) {
             terminalLocked = false;
             terminalLockButton.innerHTML = "🔓";
-        } else{
+        } else {
             terminalLocked = true;
             terminalLockButton.innerHTML = "🔒";
         }
@@ -884,8 +799,8 @@ function createBleAgent() {
         displayBleStatus('Connected', '#4dae50'); //green
         if (timer) { clearTimeout(timer); }
         timer = setTimeout(() => {
-                displayBleStatus('timeout?', 'black');
-            }, timeout);
+            displayBleStatus('timeout?', 'black');
+        }, timeout);
     }
     // Function to stop the watchdog timer
     function batteryWatchdogStop() {
@@ -1101,16 +1016,16 @@ function createGamepadAgent() {
     function getButtonBytes() {
         const gamepad = getFirstGamepad();
         let buttonStates = 0; // Single integer to hold all 16 button states
-    
+
         if (gamepad) {
             const buttonCount = Math.min(gamepad.buttons.length, 16); // Limit to 16 buttons
-    
+
             for (let i = 0; i < buttonCount; i++) {
                 const button = gamepad.buttons[i];
                 if (button && button.pressed) {
                     buttonStates |= (1 << i); // Set the corresponding bit if the button is pressed
                 }
-    
+
                 // Update button visuals if DOM element exists
                 if (buttonElements[i]) {
                     const newColor = button && button.pressed ? 'var(--alf-green)' : 'grey';
@@ -1120,11 +1035,11 @@ function createGamepadAgent() {
                 }
             }
         }
-    
+
         // Separate the 16-bit integer into two bytes
         const firstByte = buttonStates & 0xFF;        // Lower 8 bits
         const secondByte = (buttonStates >> 8) & 0xFF; // Upper 8 bits
-    
+
         return { byte0: firstByte, byte1: secondByte };
     }
 
@@ -1132,6 +1047,77 @@ function createGamepadAgent() {
         getAxes: getGamepadAxes,
         getButtons: getButtonBytes
     }
+}
+
+function ticksToDistance(ticks) {
+    const revolutions = ticks / encoderTicks;
+    return revolutions * 2 * Math.PI * wheelRadiusIn;
+}
+
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+function getControlFromWaypoints(currentIndex) {
+    const positionArray = robotPosition.split(" ");
+    const waypoints = loadedPath.waypoints;
+
+    if (currentIndex >= waypoints.length) return { throttle: 0, rotation: 0, nextIndex: currentIndex };
+
+    const targetPoint = waypoints[currentIndex];
+
+    const dx = targetPoint.anchor.x - positionArray[0];
+    const dy = targetPoint.anchor.y - positionArray[1];
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    let nextIndex = currentIndex;
+    if (dist < 0.25 && currentIndex < waypoints.length - 1) {
+        nextIndex++;
+    }
+
+    const targetAngle = Math.atan2(dy, dx);
+    let angleError = targetAngle - positionArray[2];
+    angleError = Math.atan2(Math.sin(angleError), Math.cos(angleError)); // normalize
+
+    // Generate control signals
+    let rotation = angleError / Math.PI; // normalized [-1, 1]
+    let throttle = dist * Math.cos(angleError); // scale throttle toward target
+
+    // Clamp
+    throttle = clamp(throttle, -1, 1);
+    rotation = clamp(rotation, -1, 1);
+
+    return { throttle, rotation, nextIndex };
+}
+
+function calculateLinearPID(setpoint, actual, currentTime = Date.now()) {
+    const error = setpoint - actual;
+
+    const dt = linearLastTime ? (currentTime - linearLastTime) / 1000 : 0;
+    linearLastTime = currentTime;
+
+    linearIntegral += error * dt;
+    const derivative = dt > 0 ? (error - linearPrevError) / dt : 0;
+
+    const output = (linearKP * error) + (linearKI * linearIntegral) + (linearKP * derivative);
+
+    linearPrevError = error;
+    return output;
+}
+
+function calculateRotationPID(setpoint, actual, currentTime = Date.now()) {
+    const error = setpoint - actual;
+
+    const dt = rotationLastTime ? (currentTime - rotationLastTime) / 1000 : 0;
+    rotationLastTime = currentTime;
+
+    rotationIntegral += error * dt;
+    const derivative = dt > 0 ? (error - rotationPrevError) / dt : 0;
+
+    const output = (rotationKP * error) + (rotationKI * rotationIntegral) + (rotationKP * derivative);
+
+    rotationPrevError = error;
+    return output;
 }
 
 // -------------------------------------------- keyboard --------------------------------------- //
